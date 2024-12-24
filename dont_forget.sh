@@ -3,3 +3,6 @@ pip freeze > requirements.txt
 
 # Run tests within the folder tests/
 pytest tests/
+
+# Mage: start in current directory
+mage start .
