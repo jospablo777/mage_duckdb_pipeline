@@ -6,6 +6,7 @@ if 'custom' not in globals():
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
+# Map API data types to polars types
 SOCROTA_TO_POLARS = {
     "text": pl.Utf8,
     "number": pl.Float64,  # Use Float64 to handle both integers and floats
@@ -17,9 +18,9 @@ SOCROTA_TO_POLARS = {
 # Metadata url
 domain = "data.iowa.gov" # Iowa Gov
 dataset_id = "m3tr-qhgy" # Liquor data set
-data_url = f"https://{domain}/api/views/{dataset_id}"
+data_url = f"https://{domain}/api/views/{dataset_id}" # Base url for datasets' metadata
 
-# Loads the schema of the
+# Loads the schema (i.e., types) of our data set
 @data_loader
 def load_data_schema_from_api(*args, **kwargs):
     """
