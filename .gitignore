@@ -249,3 +249,115 @@ rsconnect/
 /_site/
 
 communication/*_files/
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# data files
+mage_ai/server/data/files/**
+default_repo
+instance_metadata.json
+~/.mage_data
+mage_data/
+
+# test notebook
+test.ipynb
+
+# test files
+testfiles/
+
+# Docker specific files
+.bash_history
+.jupyter/
+.local/
+.npm/
+.python_history
+mage_ai/frontend/package-lock.json
+docker-compose.override.yml
+
+# DB files
+*.db
+
+# Terraform files
+**/.terraform*
+*.tfstate*
+*.zip
+
+# vscode
+.vscode/
+
+# front-end
+node_modules
+.env
+.npmrc
+# mage_ai/server/frontend_dist
+# mage_ai/server/frontend_dist_base_path_template
+mage_ai/server/frontend_dist_base_path
+
+# Scratch files
+scratch*
+
+# Playwright test automation
+playwright-report/
+
+# Testing files
+!mage_ai/test/
+**/TEST_CATALOG.json
+**/TEST_CONFIG*.json
+**/TEST_CONFIG_D.json
+**/TEST_CONFIG_S.json
+**/TEST_OUTPUT
+**/TEST_STATE.json
+mlfow.db
+mlruns/
+package-lock.json
+package.json
+test.py
+test/
+test_data*
+
+# mypy
+.mypy_cache/
+.dmypy.json
+
+# vim backup files
+*~
+
+# VS code
+.vscode
+
+.DS_Store
+**/.pytest_cache
+
+# Vim swap files
+*.swp
+tags
+
+# Special "scratchpad" directory for notes, code samples, experiments, etc.
+DO_NOT_COMMIT
+
+# Hive Metastore from Spark
+metastore_db
+
+# dependency management
+Pipfile
+Pipfile.lock
+
+# contract testing files
+tests/integration/cloud/rest_contracts/pacts
+
+.databricks
+
+# Local Netlify folder
+.netlify
+
+# mercury container volume
+assets/docker/mercury/volume/
