@@ -18,19 +18,36 @@ blocks:
 - all_upstream_blocks_executed: false
   color: null
   configuration: {}
-  downstream_blocks: []
+  downstream_blocks:
+  - categorize_product
   executor_config: null
   executor_type: local_python
   has_callback: false
   language: python
   name: pull_data_from_socrata
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: data_loader
   upstream_blocks:
   - get_schema_from_metadata
   uuid: pull_data_from_socrata
+- all_upstream_blocks_executed: false
+  color: null
+  configuration: {}
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: categorize_product
+  retry_config: null
+  status: updated
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - pull_data_from_socrata
+  uuid: categorize_product
 cache_block_output_in_memory: false
 callbacks: []
 concurrency_config: {}

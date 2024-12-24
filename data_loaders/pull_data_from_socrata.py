@@ -8,11 +8,11 @@ if 'test' not in globals():
 
 
 @data_loader
-def load_data_from_api(*args, **kwargs):
+def load_data_from_api(dictionary, *args, **kwargs):
     """
     Template for loading data from API
     """
-    schema = args[0]     # Access the get_schema_from_metadata output
+    schema = dictionary  # Access the get_schema_from_metadata output
 
     # Example: Using schema to read data
     data_url = "https://data.iowa.gov/resource/m3tr-qhgy.csv?$limit=1000"
