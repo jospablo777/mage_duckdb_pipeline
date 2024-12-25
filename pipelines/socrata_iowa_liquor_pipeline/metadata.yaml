@@ -15,7 +15,7 @@ blocks:
   type: data_loader
   upstream_blocks: []
   uuid: get_schema_from_metadata
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -32,7 +32,7 @@ blocks:
   upstream_blocks:
   - get_schema_from_metadata
   uuid: pull_data_from_socrata
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: transformers/product_transformations.py
@@ -52,7 +52,7 @@ blocks:
   upstream_blocks:
   - pull_data_from_socrata
   uuid: product_transformations
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: transformers/sales_and_price_related_metrics.py
@@ -72,7 +72,7 @@ blocks:
   upstream_blocks:
   - product_transformations
   uuid: sales_and_price_related_metrics
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks: []
@@ -128,5 +128,8 @@ spark_config: {}
 tags: []
 type: python
 uuid: socrata_iowa_liquor_pipeline
+variables:
+  DATASET_ID: m3tr-qhgy
+  DOMAIN: data.iowa.gov
 variables_dir: /home/jose-p/.mage_data/mage_gx_duckdb
 widgets: []
