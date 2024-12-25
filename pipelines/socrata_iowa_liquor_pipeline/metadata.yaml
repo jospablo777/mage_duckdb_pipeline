@@ -26,7 +26,7 @@ blocks:
   language: python
   name: pull_data_from_socrata
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: data_loader
   upstream_blocks:
