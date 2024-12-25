@@ -7,7 +7,7 @@ if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
 # Map API data types to polars types
-SOCROTA_TO_POLARS = {
+SODA_TO_POLARS = {
     "text": pl.Utf8,
     "number": pl.Float64,  # Use Float64 to handle both integers and floats
     "calendar_date": pl.Datetime("us"),
@@ -31,7 +31,7 @@ def load_data_schema_from_api(*args, **kwargs):
               Polars data types (e.g., pl.Utf8, pl.Float64, pl.Datetime).
 
     Notes:
-        - The `SOCROTA_TO_POLARS` dictionary maps Socrata types to Polars-compatible types.
+        - The `SODA_TO_POLARS` dictionary maps Socrata types to Polars-compatible types.
         - Columns with names starting with ":@computed_" are excluded to filter out 
           metadata or non-data columns.
     """
@@ -41,7 +41,7 @@ def load_data_schema_from_api(*args, **kwargs):
     metadata = response.json()
     columns = metadata.get("columns", [])
     schema = {
-        col["fieldName"]: SOCROTA_TO_POLARS.get(col["dataTypeName"], pl.Utf8)
+        col["fieldName"]: SODA_TO_POLARS.get(col["dataTypeName"], pl.Utf8)
         for col in columns
         if not col["fieldName"].startswith(":@computed_") # Filters out columns that are not ins the data
         }
