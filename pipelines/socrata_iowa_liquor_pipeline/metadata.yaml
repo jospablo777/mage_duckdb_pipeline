@@ -10,7 +10,7 @@ blocks:
   language: python
   name: get_schema_from_metadata
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: data_loader
   upstream_blocks: []
@@ -39,7 +39,7 @@ blocks:
     file_source:
       path: transformers/product_transformations.py
   downstream_blocks:
-  - sales_metrics
+  - sales_and_price_related_metrics
   executor_config: null
   executor_type: local_python
   has_callback: false
@@ -54,20 +54,58 @@ blocks:
   uuid: product_transformations
 - all_upstream_blocks_executed: true
   color: null
+  configuration:
+    file_path: transformers/sales_and_price_related_metrics.py
+    file_source:
+      path: transformers/sales_and_price_related_metrics.py
+  downstream_blocks:
+  - volume_based_features
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: sales_and_price_related_metrics
+  retry_config: null
+  status: executed
+  timeout: null
+  type: transformer
+  upstream_blocks:
+  - product_transformations
+  uuid: sales_and_price_related_metrics
+- all_upstream_blocks_executed: true
+  color: null
   configuration: {}
   downstream_blocks: []
   executor_config: null
   executor_type: local_python
   has_callback: false
   language: python
-  name: sales_metrics
+  name: volume_based_features
   retry_config: null
   status: updated
   timeout: null
   type: transformer
   upstream_blocks:
-  - product_transformations
-  uuid: sales_metrics
+  - sales_and_price_related_metrics
+  uuid: volume_based_features
+- all_upstream_blocks_executed: true
+  color: null
+  configuration:
+    file_path: data_loaders/get_dataset_total_rows.py
+    file_source:
+      path: data_loaders/get_dataset_total_rows.py
+  downstream_blocks: []
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: get_dataset_total_rows
+  retry_config: null
+  status: executed
+  timeout: null
+  type: data_loader
+  upstream_blocks: []
+  uuid: get_dataset_total_rows
 cache_block_output_in_memory: false
 callbacks: []
 concurrency_config: {}
