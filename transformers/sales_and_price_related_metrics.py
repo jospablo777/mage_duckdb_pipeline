@@ -33,11 +33,15 @@ def transform(data, *args, **kwargs):
         ).alias("gov_retail_markup_percentage"),
         # Price per Liter
         (
-            #
+            pl.col("state_bottle_retail") / 
+            (pl.col("bottle_volume_ml") /
+            1000) # mL in a Liter
         ).alias("price_per_liter"),
         # Price per gallon
         (
-            pl.col()
+            pl.col("state_bottle_retail") / 
+            (pl.col("bottle_volume_ml") /
+            3785.411784) # mL in a gallon
         ).alias("price_per_gallon")
 
     )
@@ -47,9 +51,9 @@ def transform(data, *args, **kwargs):
 @test
 def test_gov_profit_margin_col(output, *args) -> None:
     """
-    Test the new retail_markup_percentage column.
+    Test the new gov_profit_margin column.
     """
-    assert output.get_column("gov_profit_margin") is not None, 'The column retail_markup_percentage is undefined'
+    assert output.get_column("gov_profit_margin") is not None, 'The column gov_profit_margin is undefined'
     assert output.get_column("gov_profit_margin").dtype is pl.Float64, "The new variable type doesn't match"
 
 @test
@@ -57,6 +61,21 @@ def test_gov_retail_markup_col(output, *args) -> None:
     """
     Test the new retail_markup_percentage column.
     """
-    assert output.get_column("gov_retail_markup_percentage") is not None, 'The column retail_markup_percentage is undefined'
+    assert output.get_column("gov_retail_markup_percentage") is not None, 'The column gov_retail_markup_percentage is undefined'
     assert output.get_column("gov_retail_markup_percentage").dtype is pl.Float64, "The new variable type doesn't match"
 
+@test
+def test_price_per_liter_col(output, *args) -> None:
+    """
+    Test the new price_per_liter column.
+    """
+    assert output.get_column("price_per_liter") is not None, 'The column price_per_liter is undefined'
+    assert output.get_column("price_per_liter").dtype is pl.Float64, "The new variable type doesn't match"
+
+@test
+def test_price_per_gallon_col(output, *args) -> None:
+    """
+    Test the new price_per_gallon column.
+    """
+    assert output.get_column("price_per_gallon") is not None, 'The column price_per_gallon is undefined'
+    assert output.get_column("price_per_gallon").dtype is pl.Float64, "The new variable type doesn't match"
