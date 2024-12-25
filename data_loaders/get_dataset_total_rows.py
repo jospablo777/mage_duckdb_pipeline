@@ -5,18 +5,12 @@ if 'data_loader' not in globals():
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
-# Metadata url
-domain = "data.iowa.gov" # Iowa Gov
-dataset_id = "m3tr-qhgy" # Liquor data set
-data_url = f"https://{domain}/api/views/{dataset_id}" # Base endpoint for datasets' metadata
-
-
 @data_loader
 def get_total_of_rows(*args, **kwargs):
     """
-    Template for loading data from API
+    Download the total of rows of the data set
     """
-    url = data_url
+    url = f'https://{kwargs['DOMAIN']}/api/views/{kwargs['DATASET_ID']}'
     response = requests.get(url)
     metadata = response.json()
 

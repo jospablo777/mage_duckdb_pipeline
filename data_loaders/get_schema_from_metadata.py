@@ -14,10 +14,6 @@ SOCROTA_TO_POLARS = {
     "floating_timestamp": pl.Datetime("us"),  # Microsecond precision
 }
 
-# Metadata url
-domain = "data.iowa.gov" # Iowa Gov
-dataset_id = "m3tr-qhgy" # Liquor data set
-data_url = f"https://{domain}/api/views/{dataset_id}" # Base endpoint for datasets' metadata
 
 # Loads the schema (i.e., types) of our data set
 @data_loader
@@ -39,7 +35,7 @@ def load_data_schema_from_api(*args, **kwargs):
         - Columns with names starting with ":@computed_" are excluded to filter out 
           metadata or non-data columns.
     """
-    url = data_url
+    url = f'https://{kwargs['DOMAIN']}/api/views/{kwargs['DATASET_ID']}' #data_url
     response = requests.get(url)
 
     metadata = response.json()
