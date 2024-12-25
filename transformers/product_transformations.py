@@ -8,19 +8,20 @@ if 'test' not in globals():
 @transformer
 def transform(data, *args, **kwargs):
     """
-    Template code for a transformer block.
+    Ingest data from the upstring parent block and creates new product related variables. 
 
-    Add more parameters to this function if this block has multiple parent blocks.
-    There should be one parameter for each output variable from each parent block.
+    New variables are: 
+        liquor_type (Utf8):
 
     Args:
         data: The output from the upstream parent block
         args: The output from any additional upstream blocks (if applicable)
 
     Returns:
-        Anything (e.g. data frame, dictionary, array, int, str, etc.)
+        data (pl.DataFrame): a data frame with new variables added.
     """
     data = data.with_columns(
+        # Categorize liquors
         pl.when(pl.col("category_name").str.contains("VODK")).then("Vodka")
         .when(pl.col("category_name").str.contains("WHISK")).then("Whisky")
         .when(pl.col("category_name").str.contains("RUM")).then("Rum")

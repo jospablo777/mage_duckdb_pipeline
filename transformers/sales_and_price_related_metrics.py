@@ -6,19 +6,22 @@ if 'test' not in globals():
 
 
 @transformer
-def transform(data, *args, **kwargs):
+def transform_price_and_sales(data, *args, **kwargs):
     """
-    Template code for a transformer block.
+    Ingest data from the upstring parent block and creates new 'price and sales' related variables. 
 
-    Add more parameters to this function if this block has multiple parent blocks.
-    There should be one parameter for each output variable from each parent block.
+    New variables are: 
+        gov_profit_margin (Float64):
+        gov_retail_markup_percentage (Float64):
+        price_per_liter (Float64):
+        price_per_gallon (Float64):
 
     Args:
         data: The output from the upstream parent block
         args: The output from any additional upstream blocks (if applicable)
 
     Returns:
-        Anything (e.g. data frame, dictionary, array, int, str, etc.)
+        data (pl.DataFrame): a data frame with new variables added.
     """
     data = data.with_columns(
         # Government profit margin

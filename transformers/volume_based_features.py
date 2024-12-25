@@ -6,20 +6,19 @@ if 'test' not in globals():
 
 
 @transformer
-def transform(data, *args, **kwargs):
+def transform_volume(data, *args, **kwargs):
     """
-    Template code for a transformer block.
+    Ingest data from the upstring parent block and creates new volume related variables. 
 
-    Add more parameters to this function if this block has multiple parent blocks.
-    There should be one parameter for each output variable from each parent block.
+    New variables are: 
+        variable1
 
     Args:
         data: The output from the upstream parent block
         args: The output from any additional upstream blocks (if applicable)
 
     Returns:
-        Anything (e.g. data frame, dictionary, array, int, str, etc.)
-    """
+        dat
     # Specify your transformation logic here
 
     return data
