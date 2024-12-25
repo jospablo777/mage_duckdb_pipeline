@@ -38,7 +38,7 @@ def transform(data, *args, **kwargs):
             ).then("Cream")
         .otherwise("Other")
         .alias("liquor_type")
-)
+        )
 
     return data
 
@@ -51,7 +51,7 @@ def test_output(output, *args) -> None:
     assert output is not None, 'The output is undefined'
 
 @test
-def test_new_col(output, *args) -> None:
+def test_liquor_type_col(output, *args) -> None:
     """
     Template code for testing the output of the block.
     """
