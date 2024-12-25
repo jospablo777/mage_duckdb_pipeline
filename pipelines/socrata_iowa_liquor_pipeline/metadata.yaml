@@ -42,7 +42,7 @@ blocks:
   language: python
   name: categorize_product
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: transformer
   upstream_blocks:
@@ -59,7 +59,7 @@ executor_config: {}
 executor_count: 1
 executor_type: null
 extensions: {}
-name: socrata_pipeline
+name: socrata_iowa_liquor_pipeline
 notification_config: {}
 remote_variables_dir: null
 retry_config: {}
@@ -69,6 +69,6 @@ settings:
 spark_config: {}
 tags: []
 type: python
-uuid: socrata_pipeline
+uuid: socrata_iowa_liquor_pipeline
 variables_dir: /home/jose-p/.mage_data/mage_gx_duckdb
 widgets: []

@@ -10,7 +10,13 @@ if 'test' not in globals():
 @data_loader
 def load_data_from_api(dictionary, *args, **kwargs):
     """
-    Template for loading data from API
+    Pulls the data from the data set endpoint and reads it into a Polars data frame.
+    
+    Returns:
+        polars.DataFrame: a data frame with the content pulled from the Socrata API.    
+    
+    Args: 
+        dictionary (dict): a dictionary that specifies the type (values) of the columns (keys).
     """
     schema = dictionary  # Access the get_schema_from_metadata output
 
@@ -25,6 +31,8 @@ def load_data_from_api(dictionary, *args, **kwargs):
 @test
 def test_output(output, *args) -> None:
     """
-    Template code for testing the output of the block.
+    Validates the output of data pulling block.
     """
     assert output is not None, 'The output is undefined'
+    assert isinstance(output, pl.DataFrame), "The output is not a a Polars data frame"
+    assert len(output) > 0, "The data frame is empty"

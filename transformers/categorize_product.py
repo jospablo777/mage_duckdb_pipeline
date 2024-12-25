@@ -20,7 +20,25 @@ def transform(data, *args, **kwargs):
     Returns:
         Anything (e.g. data frame, dictionary, array, int, str, etc.)
     """
-    # Specify your transformation logic here
+    data = data.with_columns(
+        pl.when(pl.col("category_name").str.contains("VODK")).then("Vodka")
+        .when(pl.col("category_name").str.contains("WHISK")).then("Whisky")
+        .when(pl.col("category_name").str.contains("RUM")).then("Rum")
+        .when(pl.col("category_name").str.contains("SCHN")).then("Schnapps")
+        .when(pl.col("category_name").str.contains("TEQ")).then("Tequila")
+        .when(
+            pl.col("category_name").str.contains("BRANDIE")
+            | pl.col("category_name").str.contains("BRANDY")
+            ).then("Brandy")
+        .when(pl.col("category_name").str.contains("GIN")).then("Gin")
+        .when(pl.col("category_name").str.contains("MEZC")).then("Mezcal")
+        .when(
+            pl.col("category_name").str.contains("CREM")
+            | pl.col("category_name").str.contains("CREAM")
+            ).then("Cream")
+        .otherwise("Other")
+        .alias("liquor_type")
+)
 
     return data
 
@@ -31,3 +49,11 @@ def test_output(output, *args) -> None:
     Template code for testing the output of the block.
     """
     assert output is not None, 'The output is undefined'
+
+@test
+def test_new_col(output, *args) -> None:
+    """
+    Template code for testing the output of the block.
+    """
+    assert output.get_column("liquor_type") is not None, 'The column liquor_type is undefined'
+    assert output.get_column("liquor_type").dtype is pl.Utf8, "The new variable type doesn't match"

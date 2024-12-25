@@ -14,17 +14,34 @@ SOCROTA_TO_POLARS = {
     "floating_timestamp": pl.Datetime("us"),  # Microsecond precision
 }
 
-
 # Metadata url
 domain = "data.iowa.gov" # Iowa Gov
 dataset_id = "m3tr-qhgy" # Liquor data set
-data_url = f"https://{domain}/api/views/{dataset_id}" # Base url for datasets' metadata
+data_url = f"https://{domain}/api/views/{dataset_id}" # Base endpoint for datasets' metadata
 
 # Loads the schema (i.e., types) of our data set
 @data_loader
 def load_data_schema_from_api(*args, **kwargs):
     """
-    Template for loading data from API
+    Load the schema of a dataset from the Socrata API.
+
+    This function retrieves the schema of a specified dataset by making a request
+    to the Socrata API's metadata endpoint. It processes the metadata to create 
+    a dictionary mapping column names to their corresponding Polars-compatible data types.
+    Columns that start with the pattern ":@computed_" are excluded from the schema.
+
+    Returns:
+        dict: a dictionary where keys are column names (str) and values are 
+              Polars data types (e.g., pl.Utf8, pl.Float64, pl.Datetime).
+
+    Args:
+        *args: variable length argument list (not used in this implementation).
+        **kwargs: arbitrary keyword arguments (not used in this implementation).
+
+    Notes:
+        - The `SOCROTA_TO_POLARS` dictionary maps Socrata types to Polars-compatible types.
+        - Columns with names starting with ":@computed_" are excluded to filter out 
+          metadata or non-data columns.
     """
     url = data_url
     response = requests.get(url)
@@ -41,10 +58,26 @@ def load_data_schema_from_api(*args, **kwargs):
 
 
 @test
-def test_output(output, *args) -> None:
+def test_output(dictionary, *args) -> None:
     """
-    Template code for testing the output of the block.
+    Validate the output of the get_schema block.
+
+    This test ensures that the output of the data loader block meets the expected 
+    structure and basic properties. It checks that:
+    - The output is not `None`.
+    - The output is a dictionary.
+    - The dictionary is not empty.
+
+    Args:
+        dictionary (dict): the output to validate, expected to be a dictionary 
+                           representing the schema loaded by the data loader.
+
+    Raises:
+        AssertionError: if any of the following conditions are not met:
+                        - The dictionary is `None`.
+                        - The dictionary is not a dictionary.
+                        - The dictionary is empty.
     """
-    assert output is not None, "The output is undefined"
-    assert isinstance(output, dict), "The output is not a dictionary"
-    assert len(output) > 0, "The dictionary is empty"
+    assert dictionary is not None, "The output is undefined"
+    assert isinstance(dictionary, dict), "The output is not a dictionary"
+    assert len(dictionary) > 0, "The dictionary is empty"
