@@ -34,10 +34,6 @@ def load_data_schema_from_api(*args, **kwargs):
         dict: a dictionary where keys are column names (str) and values are 
               Polars data types (e.g., pl.Utf8, pl.Float64, pl.Datetime).
 
-    Args:
-        *args: variable length argument list (not used in this implementation).
-        **kwargs: arbitrary keyword arguments (not used in this implementation).
-
     Notes:
         - The `SOCROTA_TO_POLARS` dictionary maps Socrata types to Polars-compatible types.
         - Columns with names starting with ":@computed_" are excluded to filter out 
