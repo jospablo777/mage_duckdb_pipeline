@@ -10,46 +10,49 @@ blocks:
   language: python
   name: get_schema_from_metadata
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: data_loader
   upstream_blocks: []
   uuid: get_schema_from_metadata
-- all_upstream_blocks_executed: false
+- all_upstream_blocks_executed: true
   color: null
   configuration: {}
   downstream_blocks:
-  - categorize_product
+  - product_transformations
   executor_config: null
   executor_type: local_python
   has_callback: false
   language: python
   name: pull_data_from_socrata
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: data_loader
   upstream_blocks:
   - get_schema_from_metadata
   uuid: pull_data_from_socrata
-- all_upstream_blocks_executed: false
+- all_upstream_blocks_executed: true
   color: null
-  configuration: {}
+  configuration:
+    file_path: transformers/product_transformations.py
+    file_source:
+      path: transformers/product_transformations.py
   downstream_blocks:
   - sales_metrics
   executor_config: null
   executor_type: local_python
   has_callback: false
   language: python
-  name: categorize_product
+  name: product_transformations
   retry_config: null
   status: executed
   timeout: null
   type: transformer
   upstream_blocks:
   - pull_data_from_socrata
-  uuid: categorize_product
-- all_upstream_blocks_executed: false
+  uuid: product_transformations
+- all_upstream_blocks_executed: true
   color: null
   configuration: {}
   downstream_blocks: []
@@ -59,11 +62,11 @@ blocks:
   language: python
   name: sales_metrics
   retry_config: null
-  status: not_executed
+  status: updated
   timeout: null
   type: transformer
   upstream_blocks:
-  - categorize_product
+  - product_transformations
   uuid: sales_metrics
 cache_block_output_in_memory: false
 callbacks: []
