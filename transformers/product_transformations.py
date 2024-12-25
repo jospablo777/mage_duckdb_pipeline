@@ -11,7 +11,9 @@ def transform(data, *args, **kwargs):
     Ingest data from the upstring parent block and creates new product related variables. 
 
     New variables: 
-        liquor_type (Utf8): classifies the type of the liquor in a category (Whisky, Tequila, ...)
+        liquor_type (Utf8): classifies the type of the liquor in a category (Whisky, Tequila, ...).
+        is_premium (Boolean): if the bottle cost 30 USD or more, we considere it premium.
+        bottle_size (Utf8): category by bottle size (small, medium, and large).
 
     Args:
         data: The output from the upstream parent block
