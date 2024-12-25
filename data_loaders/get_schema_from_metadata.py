@@ -35,7 +35,7 @@ def load_data_schema_from_api(*args, **kwargs):
         - Columns with names starting with ":@computed_" are excluded to filter out 
           metadata or non-data columns.
     """
-    url = f'https://{kwargs['DOMAIN']}/api/views/{kwargs['DATASET_ID']}' #data_url
+    url = 'https://{DOMAIN}/api/views/{DATASET_ID}'.format(**kwargs) # Data URL, DOMAIN and DATASET_ID are global variables in kwargs
     response = requests.get(url)
 
     metadata = response.json()

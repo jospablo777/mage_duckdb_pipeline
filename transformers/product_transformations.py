@@ -10,8 +10,8 @@ def transform(data, *args, **kwargs):
     """
     Ingest data from the upstring parent block and creates new product related variables. 
 
-    New variables are: 
-        liquor_type (Utf8):
+    New variables: 
+        liquor_type (Utf8): classifies the type of the liquor in a category (Whisky, Tequila, ...)
 
     Args:
         data: The output from the upstream parent block
@@ -38,7 +38,14 @@ def transform(data, *args, **kwargs):
             | pl.col("category_name").str.contains("CREAM")
             ).then("Cream")
         .otherwise("Other")
-        .alias("liquor_type")
+        .alias("liquor_type"),
+        # Is premium
+        (pl.col("state_bottle_retail") >= 30).alias("is_premium"),
+        # Bottle size category
+        pl.when(pl.col("bottle_volume_ml") < 500).then("small")
+        .when((pl.col("bottle_volume_ml") >= 500) & (pl.col("bottle_volume_ml") < 1000)).then("medium")
+        .otherwise("large")
+        .alias("bottle_size")
         )
 
     return data
@@ -47,14 +54,30 @@ def transform(data, *args, **kwargs):
 @test
 def test_output(output, *args) -> None:
     """
-    Template code for testing the output of the block.
+    Test the output exists.
     """
     assert output is not None, 'The output is undefined'
 
 @test
 def test_liquor_type_col(output, *args) -> None:
     """
-    Template code for testing the output of the block.
+    Test the new liquor_type column.
     """
     assert output.get_column("liquor_type") is not None, 'The column liquor_type is undefined'
     assert output.get_column("liquor_type").dtype is pl.Utf8, "The new variable type doesn't match"
+
+@test
+def test_is_premium_col(output, *args) -> None:
+    """
+    Test the new is_premium column.
+    """
+    assert output.get_column("is_premium") is not None, 'The column is_premium is undefined'
+    assert output.get_column("is_premium").dtype is pl.Boolean, "The new variable type doesn't match"
+
+@test
+def test_bottle_size_col(output, *args) -> None:
+    """
+    Test the new bottle_size column.
+    """
+    assert output.get_column("bottle_size") is not None, 'The column bottle_size is undefined'
+    assert output.get_column("bottle_size").dtype is pl.Utf8, "The new variable type doesn't match"

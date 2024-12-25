@@ -21,7 +21,7 @@ def load_data_from_api(dictionary, *args, **kwargs):
     schema = dictionary  # Access the get_schema_from_metadata output
 
     # Example: Using schema to read data
-    data_url = 'https://{kwargs['DOMAIN']}/resource/{kwargs['DATASET_ID']}.csv?$limit=1000'
+    data_url = "https://{DOMAIN}/resource/{DATASET_ID}.csv?$limit=1000".format(**kwargs)
     response = requests.get(data_url)
     data = pl.read_csv(io.StringIO(response.text), schema=schema)
 

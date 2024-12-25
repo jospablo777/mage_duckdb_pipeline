@@ -10,11 +10,11 @@ def transform_price_and_sales(data, *args, **kwargs):
     """
     Ingest data from the upstring parent block and creates new 'price and sales' related variables. 
 
-    New variables are: 
-        gov_profit_margin (Float64):
-        gov_retail_markup_percentage (Float64):
-        price_per_liter (Float64):
-        price_per_gallon (Float64):
+    New variables: 
+        gov_profit_margin (Float64): captures the per-bottle profitability for the government.
+        gov_retail_markup_percentage (Float64): similar to per-bottle profitability but at a percentage level.
+        price_per_liter (Float64): value in dollars per Liter of the product in the given presentation.
+        price_per_gallon (Float64): value in dollars per gallon of the product in the given presentation.
 
     Args:
         data: The output from the upstream parent block
@@ -50,6 +50,13 @@ def transform_price_and_sales(data, *args, **kwargs):
     )
 
     return data
+
+@test
+def test_output(output, *args) -> None:
+    """
+    Test the output exists.
+    """
+    assert output is not None, 'The output is undefined'
 
 @test
 def test_gov_profit_margin_col(output, *args) -> None:
