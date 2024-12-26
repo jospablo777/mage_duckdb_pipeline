@@ -82,6 +82,7 @@ sandbox.ipynb
 */.ipynb_checkpoints/*
 profile_default/
 ipython_config.py
+notebooks/gx/
 
 # -------------------------
 # Virtual environments
