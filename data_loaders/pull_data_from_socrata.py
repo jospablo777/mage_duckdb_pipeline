@@ -1,6 +1,7 @@
 import io
 import polars as pl
 import requests
+from math import ceil
 if 'data_loader' not in globals():
     from mage_ai.data_preparation.decorators import data_loader
 if 'test' not in globals():
@@ -8,7 +9,7 @@ if 'test' not in globals():
 
 
 @data_loader
-def load_data_from_api(dictionary, *args, **kwargs):
+def load_data_from_api(schema, total_n_rows, last_record_in_db, *args, **kwargs):
     """
     Pulls the data from the data set endpoint and reads it into a Polars data frame.
     
@@ -16,12 +17,22 @@ def load_data_from_api(dictionary, *args, **kwargs):
         polars.DataFrame: a data frame with the content pulled from the Socrata API.    
     
     Args: 
-        dictionary (dict): a dictionary that specifies the type (values) of the columns (keys).
+        schema (dict): a dictionary that specifies the type (values) of the columns (keys).
     """
-    schema = dictionary  # Access the get_schema_from_metadata output
+    #schema = dictionary  # Access the get_schema_from_metadata output
+    print(kwargs.get('DOMAIN'))
+    
+    DOMAIN = 'data.iowa.gov' #kwargs.get('DOMAIN'),
+    DATASET_ID = 'm3tr-qhgy' #kwargs.get('DATASET_ID'),
+    BATCH_SIZE = 1000
+    OFFSET = last_record_in_db
+
+    reccords_left = total_n_rows - last_record_in_db
+    n_iterations = ceil(reccords_left/BATCH_SIZE)
+    
 
     # Example: Using schema to read data
-    data_url = "https://{DOMAIN}/resource/{DATASET_ID}.csv?$limit=1000".format(**kwargs)
+    data_url =  f"https://{DOMAIN}/resource/{DATASET_ID}.csv?$limit={BATCH_SIZE}&$offset={OFFSET}&$order=invoice_line_no"
     response = requests.get(data_url)
     data = pl.read_csv(io.StringIO(response.text), schema=schema)
 

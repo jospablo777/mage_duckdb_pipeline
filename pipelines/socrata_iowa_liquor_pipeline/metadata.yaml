@@ -26,13 +26,15 @@ blocks:
   language: python
   name: pull_data_from_socrata
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: data_loader
   upstream_blocks:
   - get_schema_from_metadata
+  - get_dataset_total_rows
+  - check_db
   uuid: pull_data_from_socrata
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: transformers/product_transformations.py
@@ -52,7 +54,7 @@ blocks:
   upstream_blocks:
   - pull_data_from_socrata
   uuid: product_transformations
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: transformers/sales_and_price_related_metrics.py
@@ -72,7 +74,7 @@ blocks:
   upstream_blocks:
   - product_transformations
   uuid: sales_and_price_related_metrics
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -89,7 +91,7 @@ blocks:
   upstream_blocks:
   - sales_and_price_related_metrics
   uuid: volume_based_features
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -106,7 +108,7 @@ blocks:
   upstream_blocks:
   - volume_based_features
   uuid: time_based_features
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: data_exporters/create_duckdb_table.py
@@ -120,7 +122,7 @@ blocks:
   language: python
   name: create_duckdb_table
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: data_exporter
   upstream_blocks:
@@ -151,7 +153,8 @@ blocks:
     file_path: data_loaders/get_dataset_total_rows.py
     file_source:
       path: data_loaders/get_dataset_total_rows.py
-  downstream_blocks: []
+  downstream_blocks:
+  - pull_data_from_socrata
   executor_config: null
   executor_type: local_python
   has_callback: false
@@ -163,6 +166,22 @@ blocks:
   type: data_loader
   upstream_blocks: []
   uuid: get_dataset_total_rows
+- all_upstream_blocks_executed: true
+  color: teal
+  configuration: {}
+  downstream_blocks:
+  - pull_data_from_socrata
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: check_db
+  retry_config: null
+  status: executed
+  timeout: null
+  type: custom
+  upstream_blocks: []
+  uuid: check_db
 cache_block_output_in_memory: false
 callbacks: []
 concurrency_config: {}

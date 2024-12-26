@@ -53,22 +53,6 @@ def load_data_schema_from_api(*args, **kwargs):
 def test_output(dictionary, *args) -> None:
     """
     Validate the output of the get_schema block.
-
-    This test ensures that the output of the data loader block meets the expected 
-    structure and basic properties. It checks that:
-    - The output is not `None`.
-    - The output is a dictionary.
-    - The dictionary is not empty.
-
-    Args:
-        dictionary (dict): the output to validate, expected to be a dictionary 
-                           representing the schema loaded by the data loader.
-
-    Raises:
-        AssertionError: if any of the following conditions are not met:
-                        - The dictionary is `None`.
-                        - The dictionary is not a dictionary.
-                        - The dictionary is empty.
     """
     assert dictionary is not None, "The output is undefined"
     assert isinstance(dictionary, dict), "The output is not a dictionary"
