@@ -49,7 +49,7 @@ create_table_query = """
 
 
 @data_exporter
-def export_data(data, schema, *args, **kwargs):
+def export_data(data, *args, **kwargs):
     """
     Exports data to some source.
 
@@ -67,14 +67,18 @@ def export_data(data, schema, *args, **kwargs):
     # Create a table and load data into it
     conn.sql(create_table_query)
 
-    # Insert Polars DataFrame into DuckDB
-    conn.execute("INSERT INTO iowa_liquor_sales SELECT * FROM data")
-
-    #con.sql("INSERT INTO test VALUES (42)")
-    # query the table
-    conn.sql("SELECT date, liquor_type, is_premium, sale_bottles, sale_dollars FROM iowa_liquor_sales LIMIT 20").show()
+    # This query is just to check the state of the duckdb table. DELETE LATER
+    conn.sql("SELECT invoice_line_no, date, liquor_type, is_premium, sale_bottles, sale_dollars FROM iowa_liquor_sales LIMIT 20").show()
     # explicitly close the connection
     conn.close()
+    
+    # Pass the unmodified data
+    return data
 
 
-
+@test
+def test_output(output, *args) -> None:
+    """
+    Test the output exists.
+    """
+    assert output is not None, 'The output is undefined'

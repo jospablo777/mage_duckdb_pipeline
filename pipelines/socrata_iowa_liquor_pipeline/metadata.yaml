@@ -93,7 +93,7 @@ blocks:
   color: null
   configuration: {}
   downstream_blocks:
-  - export_to_duckdb
+  - create_duckdb_table
   executor_config: null
   executor_type: local_python
   has_callback: false
@@ -108,20 +108,43 @@ blocks:
   uuid: time_based_features
 - all_upstream_blocks_executed: true
   color: null
-  configuration: {}
+  configuration:
+    file_path: data_exporters/create_duckdb_table.py
+    file_source:
+      path: data_exporters/create_duckdb_table.py
+  downstream_blocks:
+  - export_polars_to_duckdb
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: create_duckdb_table
+  retry_config: null
+  status: updated
+  timeout: null
+  type: data_exporter
+  upstream_blocks:
+  - time_based_features
+  uuid: create_duckdb_table
+- all_upstream_blocks_executed: false
+  color: null
+  configuration:
+    file_path: data_exporters/export_polars_to_duckdb.py
+    file_source:
+      path: data_exporters/export_polars_to_duckdb.py
   downstream_blocks: []
   executor_config: null
   executor_type: local_python
   has_callback: false
   language: python
-  name: export_to_duckdb
+  name: export_polars_to_duckdb
   retry_config: null
-  status: failed
+  status: executed
   timeout: null
   type: data_exporter
   upstream_blocks:
-  - time_based_features
-  uuid: export_to_duckdb
+  - create_duckdb_table
+  uuid: export_polars_to_duckdb
 - all_upstream_blocks_executed: true
   color: null
   configuration:
