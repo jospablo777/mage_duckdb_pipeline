@@ -116,7 +116,7 @@ blocks:
   language: python
   name: export_to_duckdb
   retry_config: null
-  status: updated
+  status: failed
   timeout: null
   type: data_exporter
   upstream_blocks:
