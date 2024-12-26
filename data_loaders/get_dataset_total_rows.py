@@ -10,7 +10,7 @@ def get_total_of_rows(*args, **kwargs):
     """
     Download the total of rows of the data set
     """
-    url = f'https://{kwargs['DOMAIN']}/api/views/{kwargs['DATASET_ID']}'
+    url = 'https://{DOMAIN}/api/views/{DATASET_ID}'.format(**kwargs) # Data URL, DOMAIN and DATASET_ID are global variables in kwargs
     response = requests.get(url)
     metadata = response.json()
 
