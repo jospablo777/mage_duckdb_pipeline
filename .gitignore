@@ -230,3 +230,8 @@ secrets/
 DO_NOT_COMMIT
 .file_versions
 .gitkeep
+
+# -------------------------
+# DuckDB databases
+*.duckdb
+*.duckdb.wal
