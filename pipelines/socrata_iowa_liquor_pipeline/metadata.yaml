@@ -46,13 +46,13 @@ blocks:
   language: python
   name: product_transformations
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: transformer
   upstream_blocks:
   - pull_data_from_socrata
   uuid: product_transformations
-- all_upstream_blocks_executed: false
+- all_upstream_blocks_executed: true
   color: null
   configuration:
     file_path: transformers/sales_and_price_related_metrics.py
@@ -72,7 +72,7 @@ blocks:
   upstream_blocks:
   - product_transformations
   uuid: sales_and_price_related_metrics
-- all_upstream_blocks_executed: false
+- all_upstream_blocks_executed: true
   color: null
   configuration: {}
   downstream_blocks:
@@ -89,7 +89,7 @@ blocks:
   upstream_blocks:
   - sales_and_price_related_metrics
   uuid: volume_based_features
-- all_upstream_blocks_executed: false
+- all_upstream_blocks_executed: true
   color: null
   configuration: {}
   downstream_blocks:
@@ -100,13 +100,13 @@ blocks:
   language: python
   name: time_based_features
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: transformer
   upstream_blocks:
   - volume_based_features
   uuid: time_based_features
-- all_upstream_blocks_executed: false
+- all_upstream_blocks_executed: true
   color: null
   configuration: {}
   downstream_blocks: []
@@ -116,7 +116,7 @@ blocks:
   language: python
   name: export_to_duckdb
   retry_config: null
-  status: not_executed
+  status: updated
   timeout: null
   type: data_exporter
   upstream_blocks:
