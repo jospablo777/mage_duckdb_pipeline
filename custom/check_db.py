@@ -15,20 +15,26 @@ def check_last_record(*args, **kwargs):
     Returns:
         Anything (e.g. data frame, dictionary, array, int, str, etc.)
     """
-    if os.path.exists(db_path):
-        conn = duckdb.connect("data/iowa_liquor.duckdb")
+    conn = duckdb.connect("data/iowa_liquor.duckdb")
     
+    try:
         result = conn.execute("""
         SELECT COUNT(invoice_line_no) FROM iowa_liquor_sales
         """).fetchall()
         
         rows_in_db = result[0][0]
-    else:
+
+    except duckdb.CatalogException as e:
+        print("The table doesn't exist; assigning offset=0")
+
         rows_in_db = 0
+
+    # Close connection    
+    conn.close()
 
     return rows_in_db
 
-
+ 
 @test
 def test_output(output, *args) -> None:
     """

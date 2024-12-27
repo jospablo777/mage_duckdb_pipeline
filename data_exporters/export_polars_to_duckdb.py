@@ -1,9 +1,7 @@
 import duckdb
 import polars as pl
-
 if 'data_exporter' not in globals():
     from mage_ai.data_preparation.decorators import data_exporter
-
 
 @data_exporter
 def insert_data_in_table(data, *args, **kwargs):
@@ -23,6 +21,7 @@ def insert_data_in_table(data, *args, **kwargs):
 
     # Try to insert the data into the table
     try:
+        conn.register("data", data)
         conn.execute("INSERT INTO iowa_liquor_sales SELECT * FROM data")
     except duckdb.ConstraintException as e:
         print(e)
@@ -38,6 +37,8 @@ def insert_data_in_table(data, *args, **kwargs):
         if filtered_data.height > 0:
             conn.register("filtered_data", filtered_data)  # Register the filtered DataFrame
             conn.execute("INSERT INTO iowa_liquor_sales SELECT * FROM filtered_data")
+        else:
+            print("No new records to insert.")
 
     # Fetch results as a Pandas DataFrame
     result = conn.execute("""
