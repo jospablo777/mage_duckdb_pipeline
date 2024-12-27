@@ -40,15 +40,5 @@ def insert_data_in_table(data, *args, **kwargs):
         else:
             print("No new records to insert.")
 
-    # Fetch results as a Pandas DataFrame
-    result = conn.execute("""
-    SELECT date, liquor_type, sale_bottles, sale_dollars 
-    FROM iowa_liquor_sales 
-    LIMIT 20
-    """).fetchdf()
-
-    # Print the results
-    print(result)
-
     # Explicitly close the connection
     conn.close()

@@ -66,10 +66,7 @@ def export_data(data, *args, **kwargs):
     conn = duckdb.connect("data/iowa_liquor.duckdb")
     # Create a table and load data into it
     conn.sql(create_table_query)
-
-    # This query is just to check the state of the duckdb table. DELETE LATER
-    conn.sql("SELECT invoice_line_no, date, liquor_type, is_premium, sale_bottles, sale_dollars FROM iowa_liquor_sales LIMIT 20").show()
-    # explicitly close the connection
+    # Explicitly close the connection
     conn.close()
     
     # Pass the unmodified data
