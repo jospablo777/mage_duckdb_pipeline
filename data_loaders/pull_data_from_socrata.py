@@ -27,12 +27,12 @@ def load_data_from_api(schema,
     """
     DOMAIN = 'data.iowa.gov'
     DATASET_ID = 'm3tr-qhgy'
-    BATCH_SIZE = 3000 # API batch size limit is 5k rows
+    BATCH_SIZE = 30000 # API batch size limit is 5k rows
     offset = last_record_in_db
     
     # Added this to regula the amount of data we will pull
     # Helpful for fast testing, and to avoid overloading the SODA server
-    custom_update_size = 50000 
+    custom_update_size = 1000000 
 
     print(f" Total of rows in this data set: {total_n_rows}\n Total of records in our DuckDB database: {last_record_in_db}\n Total rows left to pull: {total_n_rows - last_record_in_db}")
 
@@ -53,18 +53,19 @@ def load_data_from_api(schema,
     # Calculate number of batches
     n_iterations = ceil(reccords_left / BATCH_SIZE)
     print(f"Number of batches: {n_iterations}")
+    print(f"Number of rows that will be pulled in each batch: {BATCH_SIZE}")
 
     def fetch_batch(batch_offset):
         """Fetch a single batch of data."""
         try:
-            #print(f"Fetching batch with offset={batch_offset}") # Commented to avoid excess of noise during execution, but useful for debugging.
+            print(f"Fetching batch with offset={batch_offset}") # Commented to avoid excess of noise during execution, but useful for debugging.
             data_url = f"https://{DOMAIN}/resource/{DATASET_ID}.csv?$limit={BATCH_SIZE}&$offset={batch_offset}&$order=invoice_line_no"
             response = requests.get(data_url)
             response.raise_for_status()  # Raise an error for bad responses
             #print(f"Batch with offset={batch_offset} fetched successfully.") # Commented to avoid excess of noise during execution, but useful for debugging.
             return pl.read_csv(io.StringIO(response.text), schema=schema)
         except Exception as e:
-            print(f"Error fetching batch with offset={batch_offset}: {e}")
+            #print(f"Error fetching batch with offset={batch_offset}: {e}")
             return pl.DataFrame()  # Return an empty DataFrame on failure
 
     # Use ThreadPoolExecutor for concurrent API calls
