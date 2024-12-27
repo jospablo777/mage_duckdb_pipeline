@@ -42,7 +42,7 @@ def insert_data_in_table(data, *args, **kwargs):
 
     # Fetch results as a Pandas DataFrame
     result = conn.execute("""
-    SELECT date, liquor_type, is_premium, sale_bottles, sale_dollars 
+    SELECT date, liquor_type, sale_bottles, sale_dollars 
     FROM iowa_liquor_sales 
     LIMIT 20
     """).fetchdf()

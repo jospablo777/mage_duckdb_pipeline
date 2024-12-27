@@ -25,13 +25,16 @@ def load_data_from_api(schema,
         total_n_rows (int): total of rows in the API's data set. Used to decide if the database must be updated.
         last_record_in_db (int): number of rows in our DuckDB database. It is taken as a reference so the system knows where to continue pulling the data from the API.
     """
-    DOMAIN = 'data.iowa.gov'  # Replace with kwargs.get('DOMAIN') if needed
-    DATASET_ID = 'm3tr-qhgy'  # Replace with kwargs.get('DATASET_ID') if needed
-    BATCH_SIZE = 100
+    DOMAIN = 'data.iowa.gov'
+    DATASET_ID = 'm3tr-qhgy'
+    BATCH_SIZE = 3000 # API batch size limit is 5k rows
     offset = last_record_in_db
-    custom_update_size = 1000
+    
+    # Added this to regula the amount of data we will pull
+    # Helpful for fast testing, and to avoid overloading the SODA server
+    custom_update_size = 50000 
 
-    print(f"Starting data loader with total_n_rows={total_n_rows} and last_record_in_db={last_record_in_db}")
+    print(f" Total of rows in this data set: {total_n_rows}\n Total of records in our DuckDB database: {last_record_in_db}\n Total rows left to pull: {total_n_rows - last_record_in_db}")
 
     # Check for validity of the rows left
     reccords_left = total_n_rows - last_record_in_db
@@ -47,18 +50,18 @@ def load_data_from_api(schema,
     if reccords_left < 0:
         raise Exception("Your data base should not contain more data than the source API. Check for issues.")
 
-    # Calculate number of iterations (batches)
+    # Calculate number of batches
     n_iterations = ceil(reccords_left / BATCH_SIZE)
-    print(f"Number of iterations (batches): {n_iterations}")
+    print(f"Number of batches: {n_iterations}")
 
     def fetch_batch(batch_offset):
         """Fetch a single batch of data."""
         try:
-            #print(f"Fetching batch with offset={batch_offset}")
+            #print(f"Fetching batch with offset={batch_offset}") # Commented to avoid excess of noise during execution, but useful for debugging.
             data_url = f"https://{DOMAIN}/resource/{DATASET_ID}.csv?$limit={BATCH_SIZE}&$offset={batch_offset}&$order=invoice_line_no"
             response = requests.get(data_url)
             response.raise_for_status()  # Raise an error for bad responses
-            #print(f"Batch with offset={batch_offset} fetched successfully.")
+            #print(f"Batch with offset={batch_offset} fetched successfully.") # Commented to avoid excess of noise during execution, but useful for debugging.
             return pl.read_csv(io.StringIO(response.text), schema=schema)
         except Exception as e:
             print(f"Error fetching batch with offset={batch_offset}: {e}")
@@ -67,7 +70,7 @@ def load_data_from_api(schema,
     # Use ThreadPoolExecutor for concurrent API calls
     offsets = [offset + i * BATCH_SIZE for i in range(n_iterations)]
 
-    with ThreadPoolExecutor(max_workers=20) as executor:  # Be careful here
+    with ThreadPoolExecutor(max_workers = 5) as executor:  # Be careful here
         df_list = list(executor.map(fetch_batch, offsets))
 
     # Combine all fetched data
@@ -84,3 +87,17 @@ def test_output(output, *args) -> None:
     assert output is not None, 'The output is undefined'
     assert isinstance(output, pl.DataFrame), "The output is not a a Polars data frame"
     assert len(output) > 0, "The data frame is empty"
+
+@test
+def test_invoice_line_no_not_null_output(output, *args) -> None:
+    """
+    Test the new invoice_line_no column contains no nulls.
+    """
+    assert output["invoice_line_no"].is_null().sum() == 0, "The invoice_line_no column contain null values, it shouldn't"
+
+@test
+def test_date_not_null_output(output, *args) -> None:
+    """
+    Test the new date column contains no nulls.
+    """
+    assert output["date"].is_null().sum() == 0, "The date column contain null values, it shouldn't"
