@@ -27,9 +27,9 @@ def load_data_from_api(schema,
     """
     DOMAIN = 'data.iowa.gov'  # Replace with kwargs.get('DOMAIN') if needed
     DATASET_ID = 'm3tr-qhgy'  # Replace with kwargs.get('DATASET_ID') if needed
-    BATCH_SIZE = 50000
+    BATCH_SIZE = 100
     offset = last_record_in_db
-    custom_update_size = 200000
+    custom_update_size = 1000
 
     print(f"Starting data loader with total_n_rows={total_n_rows} and last_record_in_db={last_record_in_db}")
 
