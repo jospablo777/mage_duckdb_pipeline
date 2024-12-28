@@ -37,7 +37,7 @@ def load_data_from_api(schema,
     custom_update_size = 1000000 # Delete if you want to pull all the data in a single process. Not recomended
 
     print("SODA data pull started.")
-    print(f" Total of rows in this data set: {total_n_rows}\n Total of records in our DuckDB database: {last_record_in_db}\n Total rows left to pull: {total_n_rows - last_record_in_db}")
+    print(f" Total of rows in this data set: {total_n_rows}\n Total of records in our DuckDB database: {last_record_in_db}")
 
     # Records that we haven't pulled from the the SODA DB
     reccords_left = total_n_rows - last_record_in_db

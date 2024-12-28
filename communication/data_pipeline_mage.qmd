@@ -37,6 +37,7 @@ response = requests.get(data_url, headers=headers)
 ```
 
 Bash execution
+
 ```{bash}
 #| label: bash_pipeline_output
 #| include: true
@@ -44,13 +45,12 @@ Bash execution
 
 SODA data pull started.
  Total of rows in this data set: 30522849
- Total of records in our DuckDB database: 7132000
- Total rows left to pull: 23390849
-Records left to fetch from the API: 23390849
+ Total of records in our DuckDB database: 10132000
+Records left to fetch from the API: 20390849
 Records that will be fetched in this job: 1000000
 Number of batches: 20
 Number of rows that will be pulled in each batch: 50000
-Fetching data batches: 100%|███████████████████| 20/20 [04:18<00:00, 12.92s/it]
+Fetching data batches: 100%|████████████████████████| 20/20 [05:17<00:00, 15.85s/it]
 Pipeline run completed.
 ```
 
