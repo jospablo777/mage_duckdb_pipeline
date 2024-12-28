@@ -122,20 +122,19 @@ blocks:
   language: python
   name: create_duckdb_table
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: data_exporter
   upstream_blocks:
   - time_based_features
   uuid: create_duckdb_table
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: data_exporters/export_polars_to_duckdb.py
     file_source:
       path: data_exporters/export_polars_to_duckdb.py
-  downstream_blocks:
-  - gx_quality_check
+  downstream_blocks: []
   executor_config: null
   executor_type: local_python
   has_callback: false
@@ -148,22 +147,6 @@ blocks:
   upstream_blocks:
   - create_duckdb_table
   uuid: export_polars_to_duckdb
-- all_upstream_blocks_executed: true
-  color: teal
-  configuration: {}
-  downstream_blocks: []
-  executor_config: null
-  executor_type: local_python
-  has_callback: false
-  language: python
-  name: gx_quality_check
-  retry_config: null
-  status: executed
-  timeout: null
-  type: custom
-  upstream_blocks:
-  - export_polars_to_duckdb
-  uuid: gx_quality_check
 - all_upstream_blocks_executed: true
   color: null
   configuration:

@@ -1,6 +1,3 @@
-# Check: https://duckdb.org/docs/api/python/overview.html#:~:text=Persistent%20Storage,and%20from%20other%20DuckDB%20clients.
-# https://pro.mage.ai/blog/duckdb-with-mage-intro
-
 import duckdb
 
 if 'data_exporter' not in globals():
