@@ -10,6 +10,7 @@ if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
 
+
 @data_loader
 def load_data_from_api(schema, 
                        total_n_rows, 
@@ -28,13 +29,14 @@ def load_data_from_api(schema,
     """
     DOMAIN = 'data.iowa.gov'
     DATASET_ID = 'm3tr-qhgy'
-    BATCH_SIZE = 30000 # API batch size limit is limited to 50k rows by SODA
+    BATCH_SIZE = 50000 # API batch size limit is limited to 50k rows by SODA
     offset = last_record_in_db
     
     # Added this to regulate the amount of data we will pull
     # Helpful for fast testing, and to avoid overloading the SODA server
     custom_update_size = 1000000 # Delete if you want to pull all the data in a single process. Not recomended
 
+    print("SODA data pull started.")
     print(f" Total of rows in this data set: {total_n_rows}\n Total of records in our DuckDB database: {last_record_in_db}\n Total rows left to pull: {total_n_rows - last_record_in_db}")
 
     # Records that we haven't pulled from the the SODA DB
@@ -75,7 +77,7 @@ def load_data_from_api(schema,
 
     # Add tqdm to track progress
     df_list = []
-    with ThreadPoolExecutor(max_workers = 5) as executor:  # Be careful here
+    with ThreadPoolExecutor(max_workers = 3) as executor:  # Be careful here
         # Submit tasks to the executor
         futures = {executor.submit(fetch_batch, offset): offset for offset in offsets}
         
