@@ -1,0 +1,56 @@
+---
+title: "Data Pipeline with Mage, DuckDB, and Great Expectations"
+include-in-header:
+  - text: |
+      <link rel = "shortcut icon" href = "img/favicon.png" />
+author:
+  name: "José P. Barrantes"
+  url: "https://www.linkedin.com/in/jose-barrantes/"
+description: "GitHub Repo: [Data Pipeline with Mage, DuckDB, and Great Expectations](https://github.com/jospablo777/)"
+format: 
+  html:
+    toc: true
+    toc-location: right
+    toc-title: "On this page"
+    aside: true
+editor: source
+---
+
+```{r}
+#| label: setup
+#| include: false
+#| output: false
+
+# Tell quarto where is our python venv
+Sys.setenv(RETICULATE_PYTHON = "../venv/bin/python")
+```
+
+Token
+
+```{python}
+#| label: token_mention
+#| include: true
+#| eval: false
+
+headers = {"X-App-Token": "YOUR_TOKEN"}
+response = requests.get(data_url, headers=headers)
+```
+
+Bash execution
+```{bash}
+#| label: bash_pipeline_output
+#| include: true
+#| eval: false
+
+SODA data pull started.
+ Total of rows in this data set: 30522849
+ Total of records in our DuckDB database: 7132000
+ Total rows left to pull: 23390849
+Records left to fetch from the API: 23390849
+Records that will be fetched in this job: 1000000
+Number of batches: 20
+Number of rows that will be pulled in each batch: 50000
+Fetching data batches: 100%|███████████████████| 20/20 [04:18<00:00, 12.92s/it]
+Pipeline run completed.
+```
+
