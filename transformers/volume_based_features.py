@@ -15,8 +15,7 @@ def transform_volume(data, *args, **kwargs):
         volume_to_revenue_ratio (Float64): Indicates how much volume was sold per dollar earned
 
     Args:
-        data: The output from the upstream parent block
-        args: The output from any additional upstream blocks (if applicable)
+        data (pl.DataFrame): The output from the upstream parent block
 
     Returns:
         data (pl.DataFrame): a data frame with new variables added.

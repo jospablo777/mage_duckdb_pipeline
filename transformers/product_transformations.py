@@ -16,8 +16,7 @@ def transform(data, *args, **kwargs):
         bottle_size (Utf8): category by bottle size (small, medium, and large).
 
     Args:
-        data: The output from the upstream parent block
-        args: The output from any additional upstream blocks (if applicable)
+        data (pl.DataFrame): The output from the upstream parent block
 
     Returns:
         data (pl.DataFrame): a data frame with new variables added.

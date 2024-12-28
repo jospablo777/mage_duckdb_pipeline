@@ -17,7 +17,7 @@ def load_data_from_api(schema,
                        last_record_in_db, 
                        *args, **kwargs):
     """
-    Pulls the data from the data set endpoint and reads it into a Polars data frame concurrently.
+    Pulls the data from the SODA data set endpoint and reads it into a Polars data frame concurrently.
     
     Returns:
         polars.DataFrame: a data frame with the content pulled from the Socrata API.    

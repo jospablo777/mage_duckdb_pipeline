@@ -6,15 +6,11 @@ if 'data_exporter' not in globals():
 @data_exporter
 def insert_data_in_table(data, *args, **kwargs):
     """
-    Exports data to some source.
+    Exports a Polars data frame to a DuckDB database.
 
     Args:
-        data: The output from the upstream parent block
-        args: The output from any additional upstream blocks (if applicable)
+        data (pl.DataFrame): The output from the upstream parent block.
 
-    Output (optional):
-        Optionally return any object and it'll be logged and
-        displayed when inspecting the block run.
     """
     # Connect to DuckDB database
     conn = duckdb.connect("data/iowa_liquor.duckdb")

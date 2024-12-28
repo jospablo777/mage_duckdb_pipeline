@@ -8,7 +8,10 @@ if 'test' not in globals():
 @data_loader
 def get_total_of_rows(*args, **kwargs):
     """
-    Download the total of rows of the data set
+    Gets the total of rows of the data set in the SODA data set.
+
+    Returns:
+        total_rows (int): total of rows in the data set.
     """
     url = 'https://{DOMAIN}/api/views/{DATASET_ID}'.format(**kwargs) # Data URL, DOMAIN and DATASET_ID are global variables in kwargs
     response = requests.get(url)
@@ -23,7 +26,7 @@ def get_total_of_rows(*args, **kwargs):
 @test
 def test_output(output, *args) -> None:
     """
-    Template code for testing the output of the block.
+    Test if there is an output and verifies its type.
     """
     assert output is not None, 'The output is undefined'
     assert isinstance(output, int), 'The output is not an int'

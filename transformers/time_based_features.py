@@ -16,8 +16,7 @@ def transform_time(data, *args, **kwargs):
         quarter (UInt32): quarter of the year (Q1 = 1, Q2 = 2, ...).
 
     Args:
-        data: The output from the upstream parent block
-        args: The output from any additional upstream blocks (if applicable)
+        data (pl.DataFrame): The output from the upstream parent block
 
     Returns:
         data (pl.DataFrame): a data frame with new variables added.

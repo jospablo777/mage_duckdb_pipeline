@@ -17,8 +17,7 @@ def transform_price_and_sales(data, *args, **kwargs):
         price_per_gallon (Float64): value in dollars per gallon of the product in the given presentation.
 
     Args:
-        data: The output from the upstream parent block
-        args: The output from any additional upstream blocks (if applicable)
+        data (pl.DataFrame): The output from the upstream parent block
 
     Returns:
         data (pl.DataFrame): a data frame with new variables added.

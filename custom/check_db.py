@@ -10,10 +10,10 @@ db_path = 'data/iowa_liquor.duckdb'
 @custom
 def check_last_record(*args, **kwargs):
     """
-    args: The output from any upstream parent blocks (if applicable)
+    Rethrieves the number of records in our local DuckDB database.
 
     Returns:
-        Anything (e.g. data frame, dictionary, array, int, str, etc.)
+        rows_in_db (int): the number of records in our local database.
     """
     conn = duckdb.connect("data/iowa_liquor.duckdb")
     
@@ -38,7 +38,7 @@ def check_last_record(*args, **kwargs):
 @test
 def test_output(output, *args) -> None:
     """
-    Template code for testing the output of the block.
+    Test if there is an output and verifies its type.
     """
     assert output is not None, 'The output is undefined'
     assert isinstance(output, int), 'The output is not int'

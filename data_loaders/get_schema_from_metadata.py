@@ -27,8 +27,8 @@ def load_data_schema_from_api(*args, **kwargs):
     Columns that start with the pattern ":@computed_" are excluded from the schema.
 
     Returns:
-        dict: a dictionary where keys are column names (str) and values are 
-              Polars data types (e.g., pl.Utf8, pl.Float64, pl.Datetime).
+        schema (dict): a dictionary where keys are column names (str) and values are 
+                       Polars data types (e.g., pl.Utf8, pl.Float64, pl.Datetime).
 
     Notes:
         - The `SODA_TO_POLARS` dictionary maps Socrata types to Polars-compatible types.

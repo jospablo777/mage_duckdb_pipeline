@@ -1,3 +1,4 @@
+import os
 import duckdb
 
 if 'data_exporter' not in globals():
@@ -48,11 +49,10 @@ create_table_query = """
 @data_exporter
 def export_data(data, *args, **kwargs):
     """
-    Exports data to some source.
+    Creates a DuckDB database if it doesnt exists. It also create the table iowa_liquor_sales if it doesn't exist.
 
     Args:
-        data: The output from the upstream parent block
-        args: The output from any additional upstream blocks (if applicable)
+        data (pl.DataFrame): The output from the upstream parent block
 
     Output (optional):
         Optionally return any object and it'll be logged and
@@ -76,3 +76,10 @@ def test_output(output, *args) -> None:
     Test the output exists.
     """
     assert output is not None, 'The output is undefined'
+
+@test
+def db_exist(*args) -> None:
+    """
+    Test there is a .duckdb file.
+    """
+    assert os.path.exists("data/iowa_liquor.duckdb"), "The database file doesnt exist"
