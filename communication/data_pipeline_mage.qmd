@@ -16,6 +16,8 @@ format:
 editor: source
 ---
 
+![](img/pipeline_dag.png)
+
 ```{r}
 #| label: setup
 #| include: false
@@ -43,14 +45,15 @@ Bash execution
 #| include: true
 #| eval: false
 
+user@user-pc:~/mage_duckdb_pipeline$ mage run . socrata_iowa_liquor_pipeline
 SODA data pull started.
  Total of rows in this data set: 30522849
- Total of records in our DuckDB database: 10132000
-Records left to fetch from the API: 20390849
-Records that will be fetched in this job: 1000000
-Number of batches: 20
+ Total of records in our DuckDB database: 12132000
+Records left to fetch from the API: 18390849
+Records that will be fetched in this job: 5000000
+Number of batches: 100
 Number of rows that will be pulled in each batch: 50000
-Fetching data batches: 100%|████████████████████████| 20/20 [05:17<00:00, 15.85s/it]
+Fetching data batches: 100%|█████████████████████| 100/100 [32:04<00:00, 19.25s/it]
 Pipeline run completed.
 ```
 
