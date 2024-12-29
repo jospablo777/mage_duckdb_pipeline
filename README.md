@@ -27,14 +27,45 @@ This project demonstrates how to build an efficient data pipeline to move data f
 
 ---
 
+## Project structure
+
+```
+TODO
+```
+
 ## Installation and Setup
 
 ### Prerequisites
 - Python 3.12 or later
-- Required libraries: `requests`, `polars`, `duckdb`, `mage-ai`, `tqdm`
+- virtualenv (recommended)
 - Linux (I used Ubuntu 24.04)
 
 ### Clone the Repository
 ```bash
 git clone https://github.com/...TODO
 cd ...TODO
+```
+### Install Dependencies
+Set up a virtual environment and install the required Python packages:
+
+```bash
+python -m venv venv
+source venv/bin/activate 
+pip install -r requirements.txt
+```
+
+## Usage
+
+### Running the Pipeline
+
+Run it directly from the terminal. To fetch some data, in the project folder run:
+
+```bash
+mage run . socrata_iowa_liquor_pipeline
+```
+
+To start the Mage UI, run in the terminal (in the project's folder):
+```bash
+mage start
+```
+
