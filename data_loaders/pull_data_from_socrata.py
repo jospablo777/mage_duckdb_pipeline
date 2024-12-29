@@ -34,7 +34,7 @@ def load_data_from_api(schema,
     
     # Added this to regulate the amount of data we will pull
     # Helpful for fast testing, and to avoid overloading the SODA server
-    custom_update_size = 1000000 # Delete if you want to pull all the data in a single process. Not recomended
+    custom_update_size = 5000000 # Delete if you want to pull all the data in a single process. Not recomended
 
     print("SODA data pull started.")
     print(f" Total of rows in this data set: {total_n_rows}\n Total of records in our DuckDB database: {last_record_in_db}")
