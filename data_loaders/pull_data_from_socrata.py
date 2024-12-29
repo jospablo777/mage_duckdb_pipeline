@@ -58,7 +58,7 @@ def load_data_from_api(schema,
     n_iterations = ceil(reccords_left / BATCH_SIZE)
     print(f"Number of batches: {n_iterations}")
     print(f"Number of rows that will be pulled in each batch: {BATCH_SIZE}")
-
+    
     def fetch_batch(batch_offset):
         """Fetch a single batch of data."""
         try:
