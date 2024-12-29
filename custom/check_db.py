@@ -10,7 +10,7 @@ db_path = 'data/iowa_liquor.duckdb'
 @custom
 def check_last_record(*args, **kwargs):
     """
-    Rethrieves the number of records in our local DuckDB database.
+    Rethrieves the number of records in our local DuckDB database. If the table does not exist, it returns 0.
 
     Returns:
         rows_in_db (int): the number of records in our local database.
@@ -21,18 +21,21 @@ def check_last_record(*args, **kwargs):
         result = conn.execute("""
         SELECT COUNT(invoice_line_no) FROM iowa_liquor_sales
         """).fetchall()
-        
         rows_in_db = result[0][0]
 
     except duckdb.CatalogException as e:
-        print("The table doesn't exist; assigning offset=0")
-
+        print("The table doesn't exist; assigning rows_in_db=0")
         rows_in_db = 0
 
-    # Close connection    
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        rows_in_db = 0
+
+    # Close DB connections
     conn.close()
 
     return rows_in_db
+
 
  
 @test
