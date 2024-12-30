@@ -69,3 +69,13 @@ To start the Mage UI, run in the terminal (in the project's folder):
 mage start
 ```
 
+## Citation
+
+No need to cite, but it would mean a lot if you did! 😃 Feel free to use this code and project structure in your personal or work projects—make it yours!
+
+## Contact
+
+Let's keep in touch!
+
+- LinkedIn: [José Pablo Barrantes](https://www.linkedin.com/in/jose-barrantes/)
+- BlueSky: [doggofan77.bsky.social](https://bsky.app/profile/doggofan77.bsky.social)
