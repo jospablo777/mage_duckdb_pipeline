@@ -24,8 +24,8 @@ def load_data_from_api(schema,
     
     Args: 
         schema (dict): a dictionary that specifies the type (values) of the columns (keys).
-        total_n_rows (int): total of rows in the API's data set. Used to decide if the database must be updated.
-        last_record_in_db (int): number of rows in our DuckDB database. It is taken as a reference so the system knows where to continue pulling the data from the API.
+        last_year_in_local_db (int): year of the newest record in our local DB. Used to decide if the database must be updated.
+        records_per_year (pl.DataFrame): number of records available for each year in the SODA DB. It is taken as a reference to set the limit for the records to retrieve according each year.
     """
 
     DOMAIN     = 'data.iowa.gov'

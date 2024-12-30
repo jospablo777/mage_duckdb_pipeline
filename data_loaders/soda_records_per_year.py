@@ -17,6 +17,7 @@ def load_data_from_api(*args, **kwargs):
     """
     # SoQL to get the the number of invoices per year
     data_url = "https://data.iowa.gov/resource/m3tr-qhgy.csv?$select=date_extract_y(date) AS year, count(invoice_line_no) AS rows&$group=date_extract_y(date)"
+    print("\n")
     print("Fetching the records-per-year metadata. This might take a couple minutes..")
     response = requests.get(data_url)
     print("Done! We have our year record metadata.\n")

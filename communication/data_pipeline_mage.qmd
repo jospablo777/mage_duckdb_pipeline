@@ -46,14 +46,17 @@ Bash execution
 #| eval: false
 
 user@user-pc:~/mage_duckdb_pipeline$ mage run . socrata_iowa_liquor_pipeline
+Fetching the records-per-year metadata. This might take a couple minutes..
+Done! We have our year record metadata.
+
 SODA data pull started.
- Total of rows in this data set: 30522849
- Total of records in our DuckDB database: 12132000
-Records left to fetch from the API: 18390849
-Records that will be fetched in this job: 5000000
-Number of batches: 100
-Number of rows that will be pulled in each batch: 50000
-Fetching data batches: 100%|█████████████████████| 100/100 [32:04<00:00, 19.25s/it]
+Years to be fetched: 2017, 2018, 2019, 2020, 2021.
+Fetching data: 100%|███████████████████████████████████████| 5/5 [10:08<00:00, 121.69s/it]
+Product-related new variables, generated.
+Sales and price related metrics, computed.
+Volume-based features, computed.
+Time-based features, computed.
+Data loaded to your DuckDB database!
 Pipeline run completed.
 ```
 
