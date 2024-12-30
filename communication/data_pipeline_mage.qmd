@@ -22,6 +22,7 @@ editor: source
 #| label: setup
 #| include: false
 #| output: false
+#| eval: true
 
 # Tell quarto where is our python venv
 Sys.setenv(RETICULATE_PYTHON = "../venv/bin/python")
@@ -51,7 +52,7 @@ Done! We have our year record metadata.
 
 SODA data pull started.
 Years to be fetched: 2017, 2018, 2019, 2020, 2021.
-Fetching data: 100%|███████████████████████████████████████| 5/5 [10:08<00:00, 121.69s/it]
+Fetching data: 100%|█████████████████████████████████████| 5/5 [10:08<00:00, 121.69s/it]
 Product-related new variables, generated.
 Sales and price related metrics, computed.
 Volume-based features, computed.
@@ -59,4 +60,41 @@ Time-based features, computed.
 Data loaded to your DuckDB database!
 Pipeline run completed.
 ```
+
+
+```{r}
+conn2 <- DBI::dbConnect(
+  drv = duckdb::duckdb(),
+  dbdir = "../data/iowa_liquor.duckdb",
+  read_only = TRUE
+)
+```
+
+```{sql}
+#| output.var: query2
+#| echo: true
+#| output: true
+#| connection: conn2
+
+SELECT *
+FROM iowa_liquor_sales
+LIMIT 10
+```
+```{r}
+tibble::tibble(query2)
+```
+
+```{python}
+import duckdb
+
+con_py = duckdb.connect("../data/iowa_liquor.duckdb", read_only=True)
+
+polars_df = con_py.sql("SELECT liquor_type, bottle_size, price_per_liter FROM iowa_liquor_sales LIMIT 10").pl()
+
+polars_df
+```
+```{python}
+polars_df.height
+```
+
 
