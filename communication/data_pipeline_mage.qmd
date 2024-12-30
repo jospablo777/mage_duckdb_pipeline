@@ -1,12 +1,14 @@
 ---
-title: "Data Pipeline with Mage, DuckDB, and Great Expectations"
+title: "Building a data pipeline with Mage, Polars, and DuckDB"
 include-in-header:
   - text: |
       <link rel = "shortcut icon" href = "img/favicon.png" />
 author:
   name: "José P. Barrantes"
   url: "https://www.linkedin.com/in/jose-barrantes/"
-description: "GitHub Repo: [Data Pipeline with Mage, DuckDB, and Great Expectations](https://github.com/jospablo777/)"
+description: "GitHub Repo: [SODA to DuckDB](https://github.com/jospablo777/)"
+date: "`r Sys.Date()`"
+published-title: "Last updated"
 format: 
   html:
     toc: true
@@ -15,6 +17,37 @@ format:
     aside: true
 editor: source
 ---
+
+![](img/bonjour_bear.png)
+
+## Where are we in the data lifecycle?
+
+As data analysts or scientists, we often find ourselves working downstream in the data lifecycle. Most of the time, our role involves transforming and analyzing data that has already been prepared and served to us by upstream processes. However, having a deeper understanding of the entire data pipeline—from ingestion to transformation and storage—can empower us to optimize workflows, ensure data quality, and unlock new insights. 
+
+![The data lifecycle and where you are. Modified from "Fundamentals of Data Engineering" by Reis & Housley (2022).](img/data_lifecycle.png)
+
+Another advantage of gaining understanding—and hands-on experience—in data engineering processes is the **empathy** we build with our data engineers. These are the colleagues we work closely with and rely on, making a strong, **collaborative relationship** essential. Hence, in this hands-on article, we’ll dive into the Python ecosystem, exploring tools like Mage, Polars, and DuckDB to demonstrate how they can help us construct efficient, lightweight data pipelines that bridge the gap between upstream and downstream processes.
+
+## About the tools
+
+In this project we will use
+
+### What are data orchestrators?
+
+We will use Mage as our orchestrator
+
+### Data manipulation and storage
+
+But why Polars and DuckDB? well... we will be dealing with a small (enough) dataset which can be easily handled in memory. Here is not need for a distributed system
+
+
+
+
+![The data lifecycle and a more concrete overview of what **we will implement** in this project. Modified from "Fundamentals of Data Engineering" by Reis & Housley (2022).](img/data_lifecycle_logos.png)
+
+
+
+Using only the Python ecosystem.
 
 ![](img/pipeline_dag.png)
 
@@ -97,4 +130,10 @@ polars_df
 polars_df.height
 ```
 
+## About the polar bear in the header
 
+https://knowyourmeme.com/memes/bonjour-bear
+
+## Cited works and recommended readings
+
+- Reis, J., & Housley, M. (2022). *Fundamentals of data engineering: Plan and build robust data systems*. O'Reilly Media.
