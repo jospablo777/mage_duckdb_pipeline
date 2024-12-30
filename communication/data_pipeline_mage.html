@@ -88,7 +88,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#what-are-data-orchestrators" id="toc-what-are-data-orchestrators" class="nav-link" data-scroll-target="#what-are-data-orchestrators">What are data orchestrators?</a></li>
   <li><a href="#data-manipulation-and-storage" id="toc-data-manipulation-and-storage" class="nav-link" data-scroll-target="#data-manipulation-and-storage">Data manipulation and storage</a></li>
+  <li><a href="#tools-and-resources-overview" id="toc-tools-and-resources-overview" class="nav-link" data-scroll-target="#tools-and-resources-overview">Tools and resources overview:</a></li>
   </ul></li>
+  <li><a href="#our-problem" id="toc-our-problem" class="nav-link" data-scroll-target="#our-problem">Our problem</a></li>
   <li><a href="#about-the-polar-bear-in-the-header" id="toc-about-the-polar-bear-in-the-header" class="nav-link" data-scroll-target="#about-the-polar-bear-in-the-header">About the polar bear in the header</a></li>
   <li><a href="#cited-works-and-recommended-readings" id="toc-cited-works-and-recommended-readings" class="nav-link" data-scroll-target="#cited-works-and-recommended-readings">Cited works and recommended readings</a></li>
   </ul>
@@ -142,26 +144,42 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <figcaption>The data lifecycle and where you are. Modified from “Fundamentals of Data Engineering” by Reis &amp; Housley (2022).</figcaption>
 </figure>
 </div>
-<p>Another advantage of gaining understanding—and hands-on experience—in data engineering processes is the <strong>empathy</strong> we build with our data engineers. These are the colleagues we work closely with and rely on, making a strong, <strong>collaborative relationship</strong> essential. Hence, in this hands-on article, we’ll dive into the Python ecosystem, exploring tools like Mage, Polars, and DuckDB to demonstrate how they can help us construct efficient, lightweight data pipelines that bridge the gap between upstream and downstream processes.</p>
+<p>Another advantage of gaining understanding—and hands-on experience—in data engineering processes is the <strong>empathy</strong> we build with our data engineers. These are the colleagues we work closely with and rely on, making a strong, <strong>collaborative relationship</strong> essential. Hence, in this hands-on article, we will explore the Python ecosystem by examining tools such as Mage, Polars, and DuckDB. We’ll demonstrate how these tools can help us build efficient, lightweight data pipelines that take data from the source and store it in a format that is well-suited for high-performance analytics.</p>
 </section>
 <section id="about-the-tools" class="level2">
 <h2 class="anchored" data-anchor-id="about-the-tools">About the tools</h2>
-<p>In this project we will use</p>
+<p>In this project, we will use Mage as our data orchestrator. The tasks managed by the orchestrator will include data manipulation and transformation using Polars, as well as persistent storage with DuckDB.</p>
 <section id="what-are-data-orchestrators" class="level3">
 <h3 class="anchored" data-anchor-id="what-are-data-orchestrators">What are data orchestrators?</h3>
-<p>We will use Mage as our orchestrator</p>
+<p>Data orchestrators, such as Mage, are tools that help manage, schedule, and monitor workflows in data pipelines. They allow us to automate complex processes, ensuring that tasks are executed in the correct order and dependencies are handled seamlessly. By using Mage as our orchestrator, we can streamline our data pipeline and focus on building efficient workflows that allow us to set a local database appropriate for our analysis.</p>
 </section>
 <section id="data-manipulation-and-storage" class="level3">
 <h3 class="anchored" data-anchor-id="data-manipulation-and-storage">Data manipulation and storage</h3>
-<p>But why Polars and DuckDB? well… we will be dealing with a small (enough) dataset which can be easily handled in memory. Here is not need for a distributed system</p>
+<p>Why Polars and DuckDB? The answer lies in the size and nature of the dataset we’re working with. Since our dataset is small enough to fit in memory, we don’t need a distributed system like Spark. Polars, with its fast and memory-efficient operations, is perfect for data manipulation and transformation. Meanwhile, DuckDB provides a lightweight, yet powerful, SQL-based engine for persistent storage and querying. Together, these tools offer a simple, performant, and highly efficient solution for handling our data pipeline.</p>
+<p>Returning to the data lifecycle diagram, we can land it in a more concrete way to show how our project will be built and executed:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="img/data_lifecycle_logos.png" class="img-fluid figure-img"></p>
 <figcaption>The data lifecycle and a more concrete overview of what <strong>we will implement</strong> in this project. Modified from “Fundamentals of Data Engineering” by Reis &amp; Housley (2022).</figcaption>
 </figure>
 </div>
-<p>Using only the Python ecosystem.</p>
-<p><img src="img/pipeline_dag.png" class="img-fluid"></p>
+<p>First, we will fetch the data from the Socrata Open Data API (SODA) through HTTP. After that, we will generate some extra variables of our interest with Polars, to finally store it in a DuckDB database we will consume for analytics and predictive modeling. All this is orchestrated with Mage.</p>
+</section>
+<section id="tools-and-resources-overview" class="level3">
+<h3 class="anchored" data-anchor-id="tools-and-resources-overview">Tools and resources overview:</h3>
+<ul>
+<li><a href="https://dev.socrata.com/"><strong>SODA API:</strong></a> provides access to open datasets, serving as our data source. It contains “a wealth of open data resources from governments, non-profits, and NGOs around the world<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.”</li>
+<li><a href="https://www.mage.ai/"><strong>Mage:</strong></a> the data orchestrator that will automate and manage the pipeline.</li>
+<li><a href="https://pola.rs/"><strong>Polars:</strong></a> a high-performance data frame library implemented in Rust, ideal for fast data manipulation.</li>
+<li><a href="https://duckdb.org/"><strong>DuckDB:</strong></a> a columnar database system designed for efficient analytics and in-memory processing.</li>
+</ul>
+<p>We’ve chosen the <a href="https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data">Iowa Liquor Sales</a> dataset since it is big enough to make this (extract, transform, load) ETL process interesting.</p>
+</section>
+</section>
+<section id="our-problem" class="level2">
+<h2 class="anchored" data-anchor-id="our-problem">Our problem</h2>
+<p>Let’s say we work for a big chain of liquor stores in the US, Iowa. Part of the intelligence in your company is built upon the information made available through SODA API, and it feeds some of the dashboards the decision-makers consume. You also use it often to do research and predictive modeling. Some stakeholders have started complaining about the loading times of the dashboards, and you have also been a little frustrated with the time it takes to get the data to train your predictive models.</p>
+<p><img src="img/predictive_modeling_simpsons.png" class="img-fluid"></p>
 <p>Token</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>headers <span class="op">=</span> {<span class="st">"X-App-Token"</span>: <span class="st">"YOUR_TOKEN"</span>}</span>
@@ -313,7 +331,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-</section>
 <section id="about-the-polar-bear-in-the-header" class="level2">
 <h2 class="anchored" data-anchor-id="about-the-polar-bear-in-the-header">About the polar bear in the header</h2>
 <p>https://knowyourmeme.com/memes/bonjour-bear</p>
@@ -325,7 +342,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 </section>
 
-</main>
+
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>According to their web page :)<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
