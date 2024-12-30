@@ -10,12 +10,12 @@ blocks:
   language: python
   name: get_schema_from_metadata
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: data_loader
   upstream_blocks: []
   uuid: get_schema_from_metadata
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -26,15 +26,15 @@ blocks:
   language: python
   name: pull_data_from_socrata
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: data_loader
   upstream_blocks:
   - get_schema_from_metadata
-  - get_dataset_total_rows
-  - check_db
+  - check_local_db
+  - soda_records_per_year
   uuid: pull_data_from_socrata
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: transformers/product_transformations.py
@@ -48,13 +48,13 @@ blocks:
   language: python
   name: product_transformations
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: transformer
   upstream_blocks:
   - pull_data_from_socrata
   uuid: product_transformations
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: transformers/sales_and_price_related_metrics.py
@@ -68,13 +68,13 @@ blocks:
   language: python
   name: sales_and_price_related_metrics
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: transformer
   upstream_blocks:
   - product_transformations
   uuid: sales_and_price_related_metrics
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -85,13 +85,13 @@ blocks:
   language: python
   name: volume_based_features
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: transformer
   upstream_blocks:
   - sales_and_price_related_metrics
   uuid: volume_based_features
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -102,13 +102,13 @@ blocks:
   language: python
   name: time_based_features
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: transformer
   upstream_blocks:
   - volume_based_features
   uuid: time_based_features
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: data_exporters/create_duckdb_table.py
@@ -128,7 +128,7 @@ blocks:
   upstream_blocks:
   - time_based_features
   uuid: create_duckdb_table
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration:
     file_path: data_exporters/export_polars_to_duckdb.py
@@ -141,7 +141,7 @@ blocks:
   language: python
   name: export_polars_to_duckdb
   retry_config: null
-  status: executed
+  status: updated
   timeout: null
   type: data_exporter
   upstream_blocks:
@@ -153,8 +153,7 @@ blocks:
     file_path: data_loaders/get_dataset_total_rows.py
     file_source:
       path: data_loaders/get_dataset_total_rows.py
-  downstream_blocks:
-  - pull_data_from_socrata
+  downstream_blocks: []
   executor_config: null
   executor_type: local_python
   has_callback: false
@@ -167,7 +166,7 @@ blocks:
   upstream_blocks: []
   uuid: get_dataset_total_rows
 - all_upstream_blocks_executed: true
-  color: teal
+  color: null
   configuration: {}
   downstream_blocks:
   - pull_data_from_socrata
@@ -175,13 +174,32 @@ blocks:
   executor_type: local_python
   has_callback: false
   language: python
-  name: check_db
+  name: soda_records_per_year
+  retry_config: null
+  status: updated
+  timeout: null
+  type: data_loader
+  upstream_blocks: []
+  uuid: soda_records_per_year
+- all_upstream_blocks_executed: true
+  color: teal
+  configuration:
+    file_path: custom/check_local_db.py
+    file_source:
+      path: custom/check_local_db.py
+  downstream_blocks:
+  - pull_data_from_socrata
+  executor_config: null
+  executor_type: local_python
+  has_callback: false
+  language: python
+  name: check_local_db
   retry_config: null
   status: executed
   timeout: null
   type: custom
   upstream_blocks: []
-  uuid: check_db
+  uuid: check_local_db
 cache_block_output_in_memory: false
 callbacks: []
 concurrency_config: {}

@@ -31,6 +31,7 @@ def transform_time(data, *args, **kwargs):
         pl.col("date").dt.quarter().alias("quarter")
     )
 
+    print("Time-based features, computed.")
     return data
 
 

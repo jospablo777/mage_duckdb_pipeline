@@ -49,6 +49,7 @@ def transform(data, *args, **kwargs):
         .alias("bottle_size")
         )
 
+    print("Product-related new variables, generated.")
     return data
 
 

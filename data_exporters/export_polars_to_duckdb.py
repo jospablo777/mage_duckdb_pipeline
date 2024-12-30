@@ -38,3 +38,5 @@ def insert_data_in_table(data, *args, **kwargs):
 
     # Explicitly close the connection
     conn.close()
+
+    print("Data loaded to your DuckDB database!")

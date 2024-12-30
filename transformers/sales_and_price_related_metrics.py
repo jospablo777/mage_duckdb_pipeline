@@ -48,6 +48,7 @@ def transform_price_and_sales(data, *args, **kwargs):
 
     )
 
+    print("Sales and price related metrics, computed.")
     return data
 
 @test

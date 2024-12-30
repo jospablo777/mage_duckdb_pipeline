@@ -13,8 +13,8 @@ if 'test' not in globals():
 
 @data_loader
 def load_data_from_api(schema, 
-                       total_n_rows, 
-                       last_record_in_db, 
+                       last_year_in_local_db, 
+                       records_per_year, 
                        *args, **kwargs):
     """
     Pulls the data from the SODA data set endpoint and reads it into a Polars data frame concurrently.
@@ -27,68 +27,60 @@ def load_data_from_api(schema,
         total_n_rows (int): total of rows in the API's data set. Used to decide if the database must be updated.
         last_record_in_db (int): number of rows in our DuckDB database. It is taken as a reference so the system knows where to continue pulling the data from the API.
     """
-    DOMAIN = 'data.iowa.gov'
+
+    DOMAIN     = 'data.iowa.gov'
     DATASET_ID = 'm3tr-qhgy'
-    BATCH_SIZE = 50000 # API batch size limit is limited to 50k rows by SODA
-    offset = last_record_in_db
-    
-    # Added this to regulate the amount of data we will pull
-    # Helpful for fast testing, and to avoid overloading the SODA server
-    custom_update_size = 5000000 # Delete if you want to pull all the data in a single process. Not recomended
+    base_url   = f"https://{DOMAIN}/resource/{DATASET_ID}.csv?"
+    query_url  = "$where=date_extract_y(date)={}&$limit={}"
+    records_per_year = records_per_year.with_columns(
+    pl.format(base_url + query_url, pl.col("year"), pl.col("rows")).alias("url")
+    )
+
+    # If last year in our DuckDB is the last year in SODA DB, fetch only that year
+    records_per_year = records_per_year.filter(pl.col("year") >= last_year_in_local_db)
+
+    # Fetch only five years. Trims out the latest year since it is already in our DB
+    if last_year_in_local_db != records_per_year["year"].max():
+        # We're limiting to five years per job so our machine dont explode
+        records_per_year = records_per_year.sort("year").head(6)
+        records_per_year = records_per_year.filter(pl.col("year") != last_year_in_local_db) # Excludes last year to avoid a redundant fetch
+
+    # Years we will request to the API
+    requests_list = records_per_year["url"].to_list()
 
     print("SODA data pull started.")
-    print(f" Total of rows in this data set: {total_n_rows}\n Total of records in our DuckDB database: {last_record_in_db}")
 
-    # Records that we haven't pulled from the the SODA DB
-    reccords_left = total_n_rows - last_record_in_db
-    print(f"Records left to fetch from the API: {reccords_left}")
-    print(f"Records that will be fetched in this job: {custom_update_size}")
+    # Report to the user which years we will be working with
+    years_to_fetch = records_per_year["year"].to_list()
+    print("Years to be fetched: {}.".format(", ".join(map(str, years_to_fetch))))
     
-    # To check for validity of the rows left
-    if custom_update_size is not None:
-        if custom_update_size < reccords_left:
-            reccords_left = custom_update_size
-    
-    if reccords_left == 0:
-        raise Exception("Your database is up to date.")
-    if reccords_left < 0:
-        raise Exception("Your data base should not contain more data than the source API. Check for issues.")
-
-    # Calculate number of batches
-    n_iterations = ceil(reccords_left / BATCH_SIZE)
-    print(f"Number of batches: {n_iterations}")
-    print(f"Number of rows that will be pulled in each batch: {BATCH_SIZE}")
-    
-    def fetch_batch(batch_offset):
-        """Fetch a single batch of data."""
+    def fetch_batch(data_url):
+        """Fetch data for a given URL."""
         try:
-            #print(f"Fetching batch with offset={batch_offset}") # Commented to avoid excess of noise during execution, but useful for debugging.
-            data_url = f"https://{DOMAIN}/resource/{DATASET_ID}.csv?$limit={BATCH_SIZE}&$offset={batch_offset}&$order=invoice_line_no"
+            #print(f"Fetching data from: {data_url}") # Useful to debug, but too vebose
             response = requests.get(data_url)
             response.raise_for_status()  # Raise an error for bad responses
-            #print(f"Batch with offset={batch_offset} fetched successfully.") # Commented to avoid excess of noise during execution, but useful for debugging.
-            return pl.read_csv(io.StringIO(response.text), schema=schema)
+            #print(f"Data fetched successfully from: {data_url}") # Useful to debug, but too vebose
+            return pl.read_csv(io.StringIO(response.text), schema = schema)
         except Exception as e:
-            #print(f"Error fetching batch with offset={batch_offset}: {e}")
-            return pl.DataFrame()  # Return an empty DataFrame on failure
+            print(f"Error fetching data from {data_url}: {e}")
+            return pl.DataFrame(schema = schema)  # Return an empty DataFrame on failure
 
     # Use ThreadPoolExecutor for concurrent API calls
-    offsets = [offset + i * BATCH_SIZE for i in range(n_iterations)]
-
-    # Add tqdm to track progress
     df_list = []
-    with ThreadPoolExecutor(max_workers = 3) as executor:  # Be careful here
+    with ThreadPoolExecutor(max_workers=2) as executor:
         # Submit tasks to the executor
-        futures = {executor.submit(fetch_batch, offset): offset for offset in offsets}
-        
+        futures = {executor.submit(fetch_batch, url): url for url in requests_list}
+
         # Wrap the as_completed generator with tqdm for progress tracking
-        for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching data batches"):
-            offset = futures[future]
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching data"):
+            url = futures[future]
             try:
                 data = future.result()
-                df_list.append(data)
+                if not data.is_empty():
+                    df_list.append(data)
             except Exception as e:
-                print(f"Batch for offset={offset} generated an exception: {e}")
+                print(f"Error processing URL {url}: {e}")
 
     # Combine all fetched data
     all_pulled_data = pl.concat(df_list, how="vertical")
