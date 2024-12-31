@@ -40,10 +40,15 @@ def load_data_from_api(schema,
     records_per_year = records_per_year.filter(pl.col("year") >= last_year_in_local_db)
 
     # Fetch only five years. Trims out the latest year since it is already in our DB
-    if last_year_in_local_db != records_per_year["year"].max():
+    # It doesn't trim the first year if it is the first time we will load into our local DB
+    # The first load into the local DB is symbolized with last_year_in_local_db == 0
+    if (last_year_in_local_db != records_per_year["year"].max()) & last_year_in_local_db != 0:
         # We're limiting to five years per job so our machine dont explode
         records_per_year = records_per_year.sort("year").head(6)
         records_per_year = records_per_year.filter(pl.col("year") != last_year_in_local_db) # Excludes last year to avoid a redundant fetch
+    
+    # We're limiting to five years per job so our machine dont explode
+    records_per_year = records_per_year.sort("year").head(5)
 
     # Years we will request to the API
     requests_list = records_per_year["url"].to_list()
