@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="José P. Barrantes">
-<meta name="dcterms.date" content="2024-12-30">
+<meta name="dcterms.date" content="2024-12-31">
 <meta name="description" content="GitHub Repo: SODA to DuckDB">
 
 <title>Building a data pipeline with Mage, Polars, and DuckDB</title>
@@ -128,6 +128,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#our-problem" id="toc-our-problem" class="nav-link" data-scroll-target="#our-problem">Our problem</a></li>
   <li><a href="#solution-implementation-getting-started" id="toc-solution-implementation-getting-started" class="nav-link" data-scroll-target="#solution-implementation-getting-started">Solution implementation: getting started</a></li>
+  <li><a href="#soda-api-our-data-source" id="toc-soda-api-our-data-source" class="nav-link" data-scroll-target="#soda-api-our-data-source">SODA API: our data source</a></li>
   <li><a href="#about-the-polar-bear-in-the-header" id="toc-about-the-polar-bear-in-the-header" class="nav-link" data-scroll-target="#about-the-polar-bear-in-the-header">About the polar bear in the header</a></li>
   <li><a href="#cited-works-and-recommended-readings" id="toc-cited-works-and-recommended-readings" class="nav-link" data-scroll-target="#cited-works-and-recommended-readings">Cited works and recommended readings</a></li>
   </ul>
@@ -160,7 +161,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Last updated</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">December 30, 2024</p>
+      <p class="date">December 31, 2024</p>
     </div>
   </div>
   
@@ -261,19 +262,42 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <figcaption>Mage home UI.</figcaption>
 </figure>
 </div>
-<p>One of Mage’s greatest strengths is its intuitive user interface. It allows us to easily create and manage data pipelines. In this example, we’ve named our pipeline <code>socrata_iowa_liquor_pipeline</code>. Once the pipeline is created, we can navigate to it using the left panel, then go to the <code>Pipelines</code> section, where our newly created pipeline will be listed, click on it</p>
+<p>One of Mage’s greatest strengths is its intuitive user interface. It allows us to easily create and manage data pipelines. In this example, we’ve named our pipeline <code>socrata_iowa_liquor_pipeline</code>. Once the pipeline is created, we can navigate to it using the left panel, then go to the <code>Pipelines</code> section, where our newly created pipeline will be listed, click on it.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="img/mage_ui_left_panel.png" class="img-fluid figure-img"></p>
-<figcaption>Mage home UI left panel</figcaption>
+<figcaption>Mage home UI left panel.</figcaption>
 </figure>
 </div>
-<p>When we open it, also in the left panes, we can go to the <code>Edit pipeline</code> section and start building</p>
-<p>Token</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>headers <span class="op">=</span> {<span class="st">"X-App-Token"</span>: <span class="st">"YOUR_TOKEN"</span>}</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>response <span class="op">=</span> requests.get(data_url, headers<span class="op">=</span>headers)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>After opening the pipeline, navigate to the Edit pipeline section in the left panel, identified by the &lt;/&gt; symbol. This is where we can begin constructing our pipeline. Here, you will have the option to insert a block:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/create_block.png" class="img-fluid figure-img"></p>
+<figcaption>Create block options.</figcaption>
+</figure>
 </div>
+<p>Our objective is to build the following pipeline using a series of different blocks:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/pipeline_dag.png" class="img-fluid figure-img"></p>
+<figcaption>Pipeline we will implement in this projec.</figcaption>
+</figure>
+</div>
+<p>Great! Now that our environment is set up and we’ve familiarized ourselves with Mage’s user interface, we’ll return to Mage shortly. But first, let’s take a closer look at our data source: the <a href="https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data">Iowa Liquor Sales</a> dataset.</p>
+</section>
+<section id="soda-api-our-data-source" class="level2">
+<h2 class="anchored" data-anchor-id="soda-api-our-data-source">SODA API: our data source</h2>
+<p>The <a href="https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data">Iowa Liquor Sales data</a> is provided by the Iowa government through the Socrata Open Data API (SODA), a platform designed to grant access to open datasets from government agencies, non-profits, and other organizations. This API allows us to programmatically interact with our dataset of interest, enabling us to retrieve data via HTTP requests.</p>
+<p>The <a href="https://dev.socrata.com/foundry/data.iowa.gov/m3tr-qhgy">dataset’s documentation</a> provides the key information needed to access the data: the source domain (<code>data.iowa.gov</code>) and the dataset identifier (<code>m3tr-qhgy</code>). With this information, we can define the endpoint for sending our requests. The documentation also details the available variables and their respective data types. Below is an example of a base endpoint for this dataset:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">https://data.iowa.gov/resource/m3tr-qhgy.csv</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The dataset documentation also informs us that, to date, it consists of more than 30 million rows. Now that we know the endpoint and the size of the data, we’re ready to pull the data, right?</p>
+<p>A sensible approach would be to retrieve the data sequentially using the paging method described in the <a href="https://dev.socrata.com/docs/paging">SODA documentation</a>. This method allows us to fetch the data in manageable batches, specified by the <code>$limit</code> parameter, while navigating through the dataset using the <code>$offset</code> parameter. The process is illustrated in the following diagram:</p>
+<p>[IMAGE]</p>
+<p>Naturally, I started with this approach to find a limitation in the API that was not documented. When we get to the point of pulling the records around row 20M, the data loader will get stuck, and no information will be pulled. This might be by design or due to system limitations in which deep paginations can bog the system<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>, making this an unreliable method to get the data<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. Meaning that we will need a different strategy to retrieve the 30M records.</p>
+<p>This brings us to the next strategy: using <a href="https://dev.socrata.com/docs/queries/">SoQL</a>, the query language of the Socrata APIs. SoQL is quite similar to SQL, with the key difference that its syntax is structured to work within a URL format.</p>
+<p><strong>Why are we spending so much time on this?</strong> Understanding our data source’s quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we <strong>design</strong> our data pipeline. So it’s worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.</p>
 <p>Bash execution</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">user@user-pc:~/mage_duckdb_pipeline$</span> mage run . socrata_iowa_liquor_pipeline</span>
@@ -439,6 +463,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ol>
 <li id="fn1"><p>According to their web page :)<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn2"><p>Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we’re loving it 🪇🐑).<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>The process will get frozen at some point with no notifications or feedback.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

@@ -121,7 +121,7 @@ This brings us to our current challenge: finding a more agile and efficient way 
 
 ## Solution implementation: getting started
 
-As outlined earlier, the first step involves pulling the data from the API. However, before that, we need to set up Mage and configure the rest of our environment. To begin, we’ll clone the Git project and navigate to the project directory:
+As outlined earlier, the first step involves pulling the data from the API. However, before that, we need to set up Mage and configure the rest of our environment. To begin, we'll clone the Git project and navigate to the project directory:
 
 ```{bash}
 #| label: clone_repo
@@ -132,7 +132,7 @@ git clone https://github.com/jospablo777/mage_duckdb_pipeline.git
 cd mage_duckdb_pipeline
 ```
 
-Next, we’ll set up a virtual environment and install the necessary libraries:
+Next, we'll set up a virtual environment and install the necessary libraries:
 
 ```{bash}
 #| label: setup_venv
@@ -158,22 +158,49 @@ This will open a tab in our browser that looks like this:
 
 ![Mage home UI.](img/mage_ui_main.png)
 
-One of Mage's greatest strengths is its intuitive user interface. It allows us to easily create and manage data pipelines. In this example, we’ve named our pipeline `socrata_iowa_liquor_pipeline`. Once the pipeline is created, we can navigate to it using the left panel, then go to the `Pipelines` section, where our newly created pipeline will be listed, click on it
+One of Mage's greatest strengths is its intuitive user interface. It allows us to easily create and manage data pipelines. In this example, we've named our pipeline `socrata_iowa_liquor_pipeline`. Once the pipeline is created, we can navigate to it using the left panel, then go to the `Pipelines` section, where our newly created pipeline will be listed, click on it.
 
-![Mage home UI left panel](img/mage_ui_left_panel.png)
+![Mage home UI left panel.](img/mage_ui_left_panel.png)
 
-When we open it, also in the left panes, we can go to the `Edit pipeline` section and start building
+After opening the pipeline, navigate to the Edit pipeline section in the left panel, identified by the </> symbol. This is where we can begin constructing our pipeline. Here, you will have the option to insert a block:
 
-Token
+![Create block options.](img/create_block.png)
 
-```{python}
-#| label: token_mention
+Our objective is to build the following pipeline using a series of different blocks:
+
+![Pipeline we will implement in this projec.](img/pipeline_dag.png)
+
+Great! Now that our environment is set up and we've familiarized ourselves with Mage's user interface, we'll return to Mage shortly. But first, let's take a closer look at our data source: the [Iowa Liquor Sales](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) dataset.
+
+## SODA API: our data source
+
+The [Iowa Liquor Sales data](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) is provided by the Iowa government through the Socrata Open Data API (SODA), a platform designed to grant access to open datasets from government agencies, non-profits, and other organizations. This API allows us to programmatically interact with our dataset of interest, enabling us to retrieve data via HTTP requests.
+
+The [dataset's documentation](https://dev.socrata.com/foundry/data.iowa.gov/m3tr-qhgy) provides the key information needed to access the data: the source domain (`data.iowa.gov`) and the dataset identifier (`m3tr-qhgy`). With this information, we can define the endpoint for sending our requests. The documentation also details the available variables and their respective data types. Below is an example of a base endpoint for this dataset:
+
+```{bash}
+#| label: base_soda_endpoint
 #| include: true
 #| eval: false
 
-headers = {"X-App-Token": "YOUR_TOKEN"}
-response = requests.get(data_url, headers=headers)
+https://data.iowa.gov/resource/m3tr-qhgy.csv
 ```
+
+The dataset documentation also informs us that, to date, it consists of more than 30 million rows. Now that we know the endpoint and the size of the data, we’re ready to pull the data, right?
+
+A sensible approach would be to retrieve the data sequentially using the paging method described in the [SODA documentation](https://dev.socrata.com/docs/paging). This method allows us to fetch the data in manageable batches, specified by the `$limit` parameter, while navigating through the dataset using the `$offset` parameter. The process is illustrated in the following diagram:
+
+[IMAGE]
+
+Naturally, I started with this approach to find a limitation in the API that was not documented. When we get to the point of pulling the records around row 20M, the data loader will get stuck, and no information will be pulled. This might be by design or due to system limitations in which deep paginations can bog the system[^3], making this an unreliable method to get the data[^4]. Meaning that we will need a different strategy to retrieve the 30M records.
+
+This brings us to the next strategy: using [SoQL](https://dev.socrata.com/docs/queries/), the query language of the Socrata APIs. SoQL is quite similar to SQL, with the key difference that its syntax is structured to work within a URL format.
+
+**Why are we spending so much time on this?** Understanding our data source's quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we **design** our data pipeline. So it's worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.
+
+[^3]: I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.
+[^4]: The process will get frozen at some point with no notifications or feedback.
+
 
 Bash execution
 
