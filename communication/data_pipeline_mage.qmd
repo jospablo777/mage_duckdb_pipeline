@@ -158,9 +158,7 @@ This will open a tab in our browser that looks like this:
 
 ![Mage home UI.](img/mage_ui_main.png)
 
-
-One of the strongest of Mage is its easy user interface. Here we will be able to create our data pipelines, I named the one in our example `socrata_iowa_liquor_pipeline`. After creating the pipeline, we can navigate to it with the left panel, and go to the `Pipelines` section, there it should be the pipeline we just created. 
-
+One of Mage's greatest strengths is its intuitive user interface. It allows us to easily create and manage data pipelines. In this example, we’ve named our pipeline `socrata_iowa_liquor_pipeline`. Once the pipeline is created, we can navigate to it using the left panel, then go to the `Pipelines` section, where our newly created pipeline will be listed, click on it
 
 ![Mage home UI left panel](img/mage_ui_left_panel.png)
 
