@@ -1,0 +1,6 @@
+project:
+  type: website
+  output-dir: ../docs
+  
+website:
+  title: "Building a data pipeline with Mage, Polars, and DuckDB"

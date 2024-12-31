@@ -60,16 +60,48 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="data_pipeline_mage_files/libs/clipboard/clipboard.min.js"></script>
-<script src="data_pipeline_mage_files/libs/quarto-html/quarto.js"></script>
-<script src="data_pipeline_mage_files/libs/quarto-html/popper.min.js"></script>
-<script src="data_pipeline_mage_files/libs/quarto-html/tippy.umd.min.js"></script>
-<script src="data_pipeline_mage_files/libs/quarto-html/anchor.min.js"></script>
-<link href="data_pipeline_mage_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="data_pipeline_mage_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="data_pipeline_mage_files/libs/bootstrap/bootstrap.min.js"></script>
-<link href="data_pipeline_mage_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="data_pipeline_mage_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
 <link rel="shortcut icon" href="img/favicon.png">
 
 
@@ -77,9 +109,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <body>
 
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-  <nav id="TOC" role="doc-toc" class="toc-active">
+<div id="quarto-search-results"></div>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
@@ -91,11 +127,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#tools-and-resources-overview" id="toc-tools-and-resources-overview" class="nav-link" data-scroll-target="#tools-and-resources-overview">Tools and resources overview:</a></li>
   </ul></li>
   <li><a href="#our-problem" id="toc-our-problem" class="nav-link" data-scroll-target="#our-problem">Our problem</a></li>
+  <li><a href="#solution-implementation-getting-started" id="toc-solution-implementation-getting-started" class="nav-link" data-scroll-target="#solution-implementation-getting-started">Solution implementation: getting started</a></li>
   <li><a href="#about-the-polar-bear-in-the-header" id="toc-about-the-polar-bear-in-the-header" class="nav-link" data-scroll-target="#about-the-polar-bear-in-the-header">About the polar bear in the header</a></li>
   <li><a href="#cited-works-and-recommended-readings" id="toc-cited-works-and-recommended-readings" class="nav-link" data-scroll-target="#cited-works-and-recommended-readings">Cited works and recommended readings</a></li>
   </ul>
 </nav>
-</div>
+    </div>
+<!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -180,6 +218,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="our-problem">Our problem</h2>
 <p>Let’s say we work for a big chain of liquor stores in the US, Iowa. Part of the intelligence in your company is built upon the information made available through SODA API, and it feeds some of the dashboards the decision-makers consume. You also use it often to do research and predictive modeling. Some stakeholders have started complaining about the loading times of the dashboards, and you have also been a little frustrated with the time it takes to get the data to train your predictive models.</p>
 <p><img src="img/predictive_modeling_simpsons.png" class="img-fluid"></p>
+<p>To continue building our situation, let’s imagine the year 2020—when the term “data engineer” was not as popular as it is today. You’ve just been hired as a data analyst, and according to Google Trends, the term “data engineer” was only half as popular as it is now. Moreover, a closer look at the trend data from 2020 reveals that most searches for this term originated in tech hubs like California or Washington rather than in states like Iowa.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="data_pipeline_mage_files/figure-html/google_trends_data_eng-1.png" class="img-fluid figure-img" width="672"></p>
+<figcaption>Google trends for ‘Data Engineering’ in the US, starting from 2004 to the date (Dec 2024)</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>So, at this point you know you’re in your on for optimizing this process<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. And you already have a clear outline for this process:</p>
+<ol type="1">
+<li>Pull the data from the API.</li>
+<li>Generate the variables that provide the most valuable insights for the team️.</li>
+<li>Store the data in a location that allows for easy and fast retrieval .</li>
+</ol>
+<p>This brings us to our current challenge: finding a more agile and efficient way to make the SODA liquor sales data accessible to the rest of the company.</p>
+</section>
+<section id="solution-implementation-getting-started" class="level2">
+<h2 class="anchored" data-anchor-id="solution-implementation-getting-started">Solution implementation: getting started</h2>
+<p>As per our outline, we know we shall star pulling the data from the API, so…</p>
 <p>Token</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>headers <span class="op">=</span> {<span class="st">"X-App-Token"</span>: <span class="st">"YOUR_TOKEN"</span>}</span>
@@ -340,6 +400,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li>Reis, J., &amp; Housley, M. (2022). <em>Fundamentals of data engineering: Plan and build robust data systems</em>. O’Reilly Media.</li>
 </ul>
+
+
 </section>
 
 
@@ -347,9 +409,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <ol>
 <li id="fn1"><p>According to their web page :)<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we’re loving it 🪇🐑).<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
-</section></div></main>
-<!-- /main column -->
+</section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
   const toggleBodyColorMode = (bsSheetEl) => {

@@ -24,6 +24,11 @@ editor: source
 #| output: false
 #| eval: true
 
+# Prelude libraries
+library(readr)
+library(dplyr)
+library(ggplot2)
+
 # Tell quarto where is our python venv
 Sys.setenv(RETICULATE_PYTHON = "../venv/bin/python")
 ```
@@ -75,9 +80,48 @@ Let's say we work for a big chain of liquor stores in the US, Iowa. Part of the 
 
 ![](img/predictive_modeling_simpsons.png)
 
+To continue building our situation, let's imagine the year 2020—when the term “data engineer” was not as popular as it is today. You've just been hired as a data analyst, and according to Google Trends, the term “data engineer” was only half as popular as it is now. Moreover, a closer look at the trend data from 2020 reveals that most searches for this term originated in tech hubs like California or Washington rather than in states like Iowa.
 
+```{r}
+#| label: google_trends_data_eng
+#| echo: false
+#| warning: false
+#| fig-cap: "Google trends for 'Data Engineering' in the US, starting from 2004 to the date (Dec 2024)"
 
+# This dataset comes from google trends, starting in 2004 for all US searches.
+data_eng_trends <- read_csv('../data/data_engineer_us_30Dec2024.csv') %>% 
+  mutate(Month = paste0(Month, '-01'),
+         Month = as.Date(Month))
 
+# Chart
+ggplot(data_eng_trends, aes(x = Month, y = `data engineer`)) +
+  geom_line(color = "#00A8CC", size = 1) +
+    geom_vline(xintercept = as.Date("2020-01-01"), linetype = "dashed", color = "#FF6F61", size = 0.8) +
+  labs(
+    title = "Trends for 'Data Engineer' in google searches within the US",
+    x = "Point in time",
+    y = "Trend (normalized) value"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12)
+  )
+```
+
+So, at this point you know you're in your on for optimizing this process[^2]. And you already have a clear outline for this process:
+
+1. Pull the data from the API.
+2. Generate the variables that provide the most valuable insights for the team️.
+3. Store the data in a location that allows for easy and fast retrieval .
+
+This brings us to our current challenge: finding a more agile and efficient way to make the SODA liquor sales data accessible to the rest of the company.
+
+[^2]: Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we're loving it 🪇🐑).
+
+## Solution implementation: getting started
+
+As per our outline, we know we shall star pulling the data from the API, so...
 
 Token
 
