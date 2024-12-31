@@ -129,6 +129,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#our-problem" id="toc-our-problem" class="nav-link" data-scroll-target="#our-problem">Our problem</a></li>
   <li><a href="#solution-implementation-getting-started" id="toc-solution-implementation-getting-started" class="nav-link" data-scroll-target="#solution-implementation-getting-started">Solution implementation: getting started</a></li>
   <li><a href="#soda-api-our-data-source" id="toc-soda-api-our-data-source" class="nav-link" data-scroll-target="#soda-api-our-data-source">SODA API: our data source</a></li>
+  <li><a href="#fetching-the-data" id="toc-fetching-the-data" class="nav-link" data-scroll-target="#fetching-the-data">Fetching the data</a></li>
   <li><a href="#about-the-polar-bear-in-the-header" id="toc-about-the-polar-bear-in-the-header" class="nav-link" data-scroll-target="#about-the-polar-bear-in-the-header">About the polar bear in the header</a></li>
   <li><a href="#cited-works-and-recommended-readings" id="toc-cited-works-and-recommended-readings" class="nav-link" data-scroll-target="#cited-works-and-recommended-readings">Cited works and recommended readings</a></li>
   </ul>
@@ -212,14 +213,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><a href="https://pola.rs/"><strong>Polars:</strong></a> a high-performance data frame library implemented in Rust, ideal for fast data manipulation.</li>
 <li><a href="https://duckdb.org/"><strong>DuckDB:</strong></a> a columnar database system designed for efficient analytics and in-memory processing.</li>
 </ul>
-<p>We’ve chosen the <a href="https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data">Iowa Liquor Sales</a> dataset since it is big enough to make this (extract, transform, load) ETL process interesting.</p>
+<p>We’ve chosen the <a href="https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data">Iowa Liquor Sales</a> dataset since it is big enough to make this ETL (extract, transform, load) pipeline interesting.</p>
 </section>
 </section>
 <section id="our-problem" class="level2">
 <h2 class="anchored" data-anchor-id="our-problem">Our problem</h2>
 <p>Let’s say we work for a big chain of liquor stores in the US, Iowa. Part of the intelligence in your company is built upon the information made available through SODA API, and it feeds some of the dashboards the decision-makers consume. You also use it often to do research and predictive modeling. Some stakeholders have started complaining about the loading times of the dashboards, and you have also been a little frustrated with the time it takes to get the data to train your predictive models.</p>
 <p><img src="img/predictive_modeling_simpsons.png" class="img-fluid"></p>
-<p>To continue building our situation, let’s imagine the year 2020—when the term “data engineer” was not as popular as it is today. You’ve just been hired as a data analyst, and according to Google Trends, the term “data engineer” was only half as popular as it is now. Moreover, a closer look at the trend data from 2020 reveals that most searches for this term originated in tech hubs like California or Washington rather than in states like Iowa.</p>
+<p>To continue building our situation, let’s imagine the year 2020—when the term “data engineer” was not as popular as it is today. You’ve just been hired as a data analyst<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>, and according to Google Trends, the term “data engineer” was only half as popular as it is now. Moreover, a closer look at the trend data from 2020 reveals that most searches for this term originated in tech hubs like California or Washington rather than in states like Iowa.</p>
 <div class="cell">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
@@ -230,7 +231,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<p>So, at this point you know you’re in your on for optimizing this process<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. And you already have a clear outline for this process:</p>
+<p>At this point, you know you are on your own to optimize this process<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. And you already have a clear outline for this process:</p>
 <ol type="1">
 <li>Pull the data from the API.</li>
 <li>Generate the variables that provide the most valuable insights for the team️.</li>
@@ -295,9 +296,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The dataset documentation also informs us that, to date, it consists of more than 30 million rows. Now that we know the endpoint and the size of the data, we’re ready to pull the data, right?</p>
 <p>A sensible approach would be to retrieve the data sequentially using the paging method described in the <a href="https://dev.socrata.com/docs/paging">SODA documentation</a>. This method allows us to fetch the data in manageable batches, specified by the <code>$limit</code> parameter, while navigating through the dataset using the <code>$offset</code> parameter. The process is illustrated in the following diagram:</p>
 <p>[IMAGE]</p>
-<p>Naturally, I started with this approach to find a limitation in the API that was not documented. When we get to the point of pulling the records around row 20M, the data loader will get stuck, and no information will be pulled. This might be by design or due to system limitations in which deep paginations can bog the system<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>, making this an unreliable method to get the data<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. Meaning that we will need a different strategy to retrieve the 30M records.</p>
+<p>Naturally, I started with this approach to find a limitation in the API that was not documented. When we get to the point of pulling the records around row 20M, the data loader will get stuck, and no information will be pulled. This might be by design or due to system limitations in which deep paginations can bog the system<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>, making this an unreliable method to get the data<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>. Meaning that we will need a different strategy to retrieve the 30M records.</p>
 <p>This brings us to the next strategy: using <a href="https://dev.socrata.com/docs/queries/">SoQL</a>, the query language of the Socrata APIs. SoQL is quite similar to SQL, with the key difference that its syntax is structured to work within a URL format.</p>
 <p><strong>Why are we spending so much time on this?</strong> Understanding our data source’s quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we <strong>design</strong> our data pipeline. So it’s worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.</p>
+<p>Now that we have a clearer understanding of the upstream stage of our data—the source:</p>
+<p><img src="img/soda_done_data_lifecycle_logos.png" class="img-fluid"> With this in mind, we can now move on to the ingestion step.</p>
+</section>
+<section id="fetching-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="fetching-the-data">Fetching the data</h2>
+<p>We are aware of the endpoint to request the data, and of some limitations of this API as well. We know that we cannot fetch the data as it is because at some point out pipeline will clog, and wont be able to take more data into the stream.</p>
 <p>Bash execution</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">user@user-pc:~/mage_duckdb_pipeline$</span> mage run . socrata_iowa_liquor_pipeline</span>
@@ -462,9 +469,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <ol>
 <li id="fn1"><p>According to their web page :)<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p>Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we’re loving it 🪇🐑).<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p>I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn4"><p>The process will get frozen at some point with no notifications or feedback.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>There is no budget for a “scientist,” and at this point in history, there is no such thing as a “data engineer” in <span style="text-decoration: line-through;">Latin America</span> Iowa.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we’re loving it 🪇🐑).<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>The process will get frozen at some point with no notifications or feedback.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

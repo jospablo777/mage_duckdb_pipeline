@@ -69,7 +69,7 @@ First, we will fetch the data from the Socrata Open Data API (SODA) through HTTP
 - [**DuckDB:**](https://duckdb.org/) a columnar database system designed for efficient analytics and in-memory processing.
 
 
-We've chosen the [Iowa Liquor Sales](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) dataset since it is big enough to make this (extract, transform, load) ETL process interesting.
+We've chosen the [Iowa Liquor Sales](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) dataset since it is big enough to make this ETL (extract, transform, load) pipeline interesting.
 
 [^1]: According to their web page :)
 
@@ -80,7 +80,7 @@ Let's say we work for a big chain of liquor stores in the US, Iowa. Part of the 
 
 ![](img/predictive_modeling_simpsons.png)
 
-To continue building our situation, let's imagine the year 2020—when the term “data engineer” was not as popular as it is today. You've just been hired as a data analyst, and according to Google Trends, the term “data engineer” was only half as popular as it is now. Moreover, a closer look at the trend data from 2020 reveals that most searches for this term originated in tech hubs like California or Washington rather than in states like Iowa.
+To continue building our situation, let's imagine the year 2020—when the term “data engineer” was not as popular as it is today. You've just been hired as a data analyst[^2], and according to Google Trends, the term “data engineer” was only half as popular as it is now. Moreover, a closer look at the trend data from 2020 reveals that most searches for this term originated in tech hubs like California or Washington rather than in states like Iowa.
 
 ```{r}
 #| label: google_trends_data_eng
@@ -109,7 +109,7 @@ ggplot(data_eng_trends, aes(x = Month, y = `data engineer`)) +
   )
 ```
 
-So, at this point you know you're in your on for optimizing this process[^2]. And you already have a clear outline for this process:
+At this point, you know you are on your own to optimize this process[^3]. And you already have a clear outline for this process:
 
 1. Pull the data from the API.
 2. Generate the variables that provide the most valuable insights for the team️.
@@ -117,7 +117,8 @@ So, at this point you know you're in your on for optimizing this process[^2]. An
 
 This brings us to our current challenge: finding a more agile and efficient way to make the SODA liquor sales data accessible to the rest of the company.
 
-[^2]: Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we're loving it 🪇🐑).
+[^2]: There is no budget for a "scientist," and at this point in history, there is no such thing as a "data engineer" in [Latin America]{style="text-decoration: line-through;"} Iowa.
+[^3]: Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we're loving it 🪇🐑).
 
 ## Solution implementation: getting started
 
@@ -192,15 +193,26 @@ A sensible approach would be to retrieve the data sequentially using the paging 
 
 [IMAGE]
 
-Naturally, I started with this approach to find a limitation in the API that was not documented. When we get to the point of pulling the records around row 20M, the data loader will get stuck, and no information will be pulled. This might be by design or due to system limitations in which deep paginations can bog the system[^3], making this an unreliable method to get the data[^4]. Meaning that we will need a different strategy to retrieve the 30M records.
+Naturally, I started with this approach to find a limitation in the API that was not documented. When we get to the point of pulling the records around row 20M, the data loader will get stuck, and no information will be pulled. This might be by design or due to system limitations in which deep paginations can bog the system[^4], making this an unreliable method to get the data[^5]. Meaning that we will need a different strategy to retrieve the 30M records.
 
 This brings us to the next strategy: using [SoQL](https://dev.socrata.com/docs/queries/), the query language of the Socrata APIs. SoQL is quite similar to SQL, with the key difference that its syntax is structured to work within a URL format.
 
 **Why are we spending so much time on this?** Understanding our data source's quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we **design** our data pipeline. So it's worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.
 
-[^3]: I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.
-[^4]: The process will get frozen at some point with no notifications or feedback.
+Now that we have a clearer understanding of the upstream stage of our data—the source:
 
+![](img/soda_done_data_lifecycle_logos.png)
+With this in mind, we can now move on to the ingestion step.
+
+[^4]: I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.
+[^5]: The process will get frozen at some point with no notifications or feedback.
+
+
+## Fetching the data
+
+We are aware of the endpoint to request the data, and of some limitations of this API as well. We know that we cannot fetch the data as it is because at some point out pipeline will clog, and wont be able to take more data into the stream.
+
+Due to this we will write more complex in our HTTP request using SoQL...
 
 Bash execution
 
