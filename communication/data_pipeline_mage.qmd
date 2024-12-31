@@ -160,6 +160,7 @@ This will open a tab in our browser that looks like this:
 
 One of the strongest of Mage is its easy user interface. Here we will be able to create our data pipelines, I named the one in our example `socrata_iowa_liquor_pipeline`. After creating the pipeline, we can navigate to it with the left panel, and go to the `Pipelines` section, there it should be the pipeline we just created. 
 
+
 ![](img/mage_ui_left_panel.png)
 
 When we open it, also in the left panes, we can go to the `Edit pipeline` section and start building
