@@ -42,17 +42,18 @@ TODO
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/...TODO
-cd ...TODO
+git clone https://github.com/jospablo777/mage_duckdb_pipeline.git
+cd mage_duckdb_pipeline
 ```
 ### Install Dependencies
 Set up a virtual environment and install the required Python packages:
 
 ```bash
-python -m venv venv
-source venv/bin/activate 
-pip install -r requirements.txt
+python -m venv venv             # The first 'venv' is the command, the second is the name of the folder for the virtual environment.
+source venv/bin/activate        # Activate the virtual environment.
+pip install -r requirements.txt # Install dependencies from the requirements file.
 ```
+
 
 ## Usage
 
