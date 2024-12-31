@@ -44,7 +44,7 @@ mage_duckdb_pipeline/
 ├── requirements.txt # Project dependencies
 ├── .nojekyll
 ├── dont_forget.sh   # Terminal instructions I don't want to forget
-├── LICENSE
+├── LICENSE          # Open source
 └── README.md
 
 ```
