@@ -129,7 +129,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#our-problem" id="toc-our-problem" class="nav-link" data-scroll-target="#our-problem">Our problem</a></li>
   <li><a href="#solution-implementation-getting-started" id="toc-solution-implementation-getting-started" class="nav-link" data-scroll-target="#solution-implementation-getting-started">Solution implementation: getting started</a></li>
   <li><a href="#soda-api-our-data-source" id="toc-soda-api-our-data-source" class="nav-link" data-scroll-target="#soda-api-our-data-source">SODA API: our data source</a></li>
-  <li><a href="#fetching-the-data" id="toc-fetching-the-data" class="nav-link" data-scroll-target="#fetching-the-data">Fetching the data</a></li>
+  <li><a href="#fetching-the-data" id="toc-fetching-the-data" class="nav-link" data-scroll-target="#fetching-the-data">Fetching the data</a>
+  <ul class="collapse">
+  <li><a href="#wrinting-our-first-mage-blocks" id="toc-wrinting-our-first-mage-blocks" class="nav-link" data-scroll-target="#wrinting-our-first-mage-blocks">Wrinting our first Mage blocks</a></li>
+  </ul></li>
   <li><a href="#about-the-polar-bear-in-the-header" id="toc-about-the-polar-bear-in-the-header" class="nav-link" data-scroll-target="#about-the-polar-bear-in-the-header">About the polar bear in the header</a></li>
   <li><a href="#cited-works-and-recommended-readings" id="toc-cited-works-and-recommended-readings" class="nav-link" data-scroll-target="#cited-works-and-recommended-readings">Cited works and recommended readings</a></li>
   </ul>
@@ -312,13 +315,40 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>This approach limits pagination to the number of years in the dataset rather than the total number of records. By fetching data in yearly batches, our requests won’t get stuck at an offset of 20 million, as each year contains fewer than 3 million records.</p>
 <p><strong>Why are we spending so much time on this?</strong> Understanding our data source’s quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we <strong>design</strong> our data pipeline. So it’s worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.</p>
-<p>Now that we have a clearer understanding of the upstream stage of our data—the source:</p>
-<p><img src="img/soda_done_data_lifecycle_logos.png" class="img-fluid"> With this in mind, we can now move on to the ingestion step.</p>
+<p>Now that we have a clearer understanding of the upstream stage of our data source.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/soda_done_data_lifecycle_logos.png" class="img-fluid figure-img"></p>
+<figcaption>Progress we’ve made so far.</figcaption>
+</figure>
+</div>
+<p>With this in mind, we can now move on to the ingestion step.</p>
 </section>
 <section id="fetching-the-data" class="level2">
 <h2 class="anchored" data-anchor-id="fetching-the-data">Fetching the data</h2>
-<p>We are aware of the endpoint to request the data, and of some limitations of this API as well. We know that we cannot fetch the data as it is because at some point out pipeline will clog, and wont be able to take more data into the stream.</p>
-<p>Due to this we will write more complex in our HTTP request using SoQL…</p>
+<p>We are aware of the endpoint to request the data and some limitations of this API. We know that we cannot fetch the data as it is because, at some point, our pipeline will clog, and we won’t be able to request more data from the SODA DB.</p>
+<p>Due to this, we will write more complex HTTP requests using <a href="https://dev.socrata.com/docs/queries/">SoQL</a>, the SODA query language. SoQL syntax is similar to SQL, so if you are familiar with relational databases, learning will feel intuitive.</p>
+<p>Our base query to fetch the data will look something like this:</p>
+<p><span style="color:#008080;">https://data.iowa.gov/resource/m3tr-qhgy.csv</span>?<span style="color:#4169E1;">$where=date_extract_y(date)=2013</span>&amp;<span style="color:#FF8C00;">$limit=2000</span></p>
+<ul>
+<li><span style="color:#008080;"><strong>Teal:</strong></span> the endpoint for the data request.</li>
+<li><span style="color:#4169E1;"><strong>Blue:</strong></span> the <code>WHERE</code> clause of the SoQL query, used to filter records for the year 2013. The function <code>date_extract_y()</code> extracts the year from the <code>date</code> column.</li>
+<li><span style="color:#FF8C00;"><strong>Red:</strong></span> the <code>LIMIT</code> clause of the SoQL query, used to limit the response to 2000 records.</li>
+</ul>
+<p>Notice that the <code>?</code> symbol separates the endpoint from the query parameters, and each clause is separated by an <code>&amp;</code> symbol. To indicate the start of a clause, a <code>$</code> is used.</p>
+<p>This request will be sent using the <code>GET</code> HTTP method.</p>
+<p>With this in mind, we can return to Mage. We’ll begin by creating the first three blocks, which will focus on retrieving metadata. The primary purpose of these blocks is to provide the downstream block with the necessary information on what data to fetch from the endpoint and how to fetch it.</p>
+<section id="wrinting-our-first-mage-blocks" class="level3">
+<h3 class="anchored" data-anchor-id="wrinting-our-first-mage-blocks">Wrinting our first Mage blocks</h3>
+<p>Here we will implement our first block, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to…</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/create_block.png" class="img-fluid figure-img"></p>
+<figcaption>Creating our first block.</figcaption>
+</figure>
+</div>
+<p>Here, select <code>Data loader</code>, then navigate to the creation option and select Python as the language, and then API as the source.</p>
+<p>get_schema_from_metadata soda_records_per_year check_local_db</p>
 <p>Bash execution</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">user@user-pc:~/mage_duckdb_pipeline$</span> mage run . socrata_iowa_liquor_pipeline</span>
@@ -464,6 +494,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <pre><code>10</code></pre>
 </div>
 </div>
+</section>
 </section>
 <section id="about-the-polar-bear-in-the-header" class="level2">
 <h2 class="anchored" data-anchor-id="about-the-polar-bear-in-the-header">About the polar bear in the header</h2>

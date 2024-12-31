@@ -205,9 +205,10 @@ This approach limits pagination to the number of years in the dataset rather tha
 
 **Why are we spending so much time on this?** Understanding our data source's quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we **design** our data pipeline. So it's worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.
 
-Now that we have a clearer understanding of the upstream stage of our data—the source:
+Now that we have a clearer understanding of the upstream stage of our data source.
 
-![](img/soda_done_data_lifecycle_logos.png)
+![Progress we've made so far.](img/soda_done_data_lifecycle_logos.png)
+
 With this in mind, we can now move on to the ingestion step.
 
 [^4]: I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.
@@ -216,9 +217,35 @@ With this in mind, we can now move on to the ingestion step.
 
 ## Fetching the data
 
-We are aware of the endpoint to request the data, and of some limitations of this API as well. We know that we cannot fetch the data as it is because at some point out pipeline will clog, and wont be able to take more data into the stream.
+We are aware of the endpoint to request the data and some limitations of this API. We know that we cannot fetch the data as it is because, at some point, our pipeline will clog, and we won't be able to request more data from the SODA DB.
 
-Due to this we will write more complex in our HTTP request using SoQL...
+Due to this, we will write more complex HTTP requests using [SoQL](https://dev.socrata.com/docs/queries/), the SODA query language. SoQL syntax is similar to SQL, so if you are familiar with relational databases, learning will feel intuitive.
+
+Our base query to fetch the data will look something like this:
+
+[https://data.iowa.gov/resource/m3tr-qhgy.csv]{style="color:#008080;"}?[\$where=date_extract_y(date)=2013]{style="color:#4169E1;"}&[$limit=2000]{style="color:#FF8C00;"}
+
+- [**Teal:**]{style="color:#008080;"} the endpoint for the data request.
+- [**Blue:**]{style="color:#4169E1;"} the `WHERE` clause of the SoQL query, used to filter records for the year 2013. The function `date_extract_y()` extracts the year from the `date` column.
+- [**Red:**]{style="color:#FF8C00;"} the `LIMIT` clause of the SoQL query, used to limit the response to 2000 records.
+
+Notice that the `?` symbol separates the endpoint from the query parameters, and each clause is separated by an `&` symbol. To indicate the start of a clause, a `$` is used.
+
+This request will be sent using the `GET` HTTP method.
+
+With this in mind, we can return to Mage. We'll begin by creating the first three blocks, which will focus on retrieving metadata. The primary purpose of these blocks is to provide the downstream block with the necessary information on what data to fetch from the endpoint and how to fetch it.
+
+### Wrinting our first Mage blocks
+
+Here we will implement our first block, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to...
+
+![Creating our first block.](img/create_block.png)
+
+Here, select `Data loader`, then navigate to the creation option and select Python as the language, and then API as the source.
+
+get_schema_from_metadata
+soda_records_per_year
+check_local_db
 
 Bash execution
 

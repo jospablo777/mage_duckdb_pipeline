@@ -10,12 +10,12 @@ blocks:
   language: python
   name: get_schema_from_metadata
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: data_loader
   upstream_blocks: []
   uuid: get_schema_from_metadata
-- all_upstream_blocks_executed: false
+- all_upstream_blocks_executed: true
   color: null
   configuration: {}
   downstream_blocks:
@@ -158,7 +158,7 @@ blocks:
   language: python
   name: soda_records_per_year
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: data_loader
   upstream_blocks: []
