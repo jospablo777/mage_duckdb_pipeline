@@ -191,11 +191,17 @@ The dataset documentation also informs us that, to date, it consists of more tha
 
 A sensible approach would be to retrieve the data sequentially using the paging method described in the [SODA documentation](https://dev.socrata.com/docs/paging). This method allows us to fetch the data in manageable batches, specified by the `$limit` parameter, while navigating through the dataset using the `$offset` parameter. The process is illustrated in the following diagram:
 
-[IMAGE]
+![Later rows of the data can't be fetched due to system limits.](img/pagination_approach.png)
 
 Naturally, I started with this approach to find a limitation in the API that was not documented. When we get to the point of pulling the records around row 20M, the data loader will get stuck, and no information will be pulled. This might be by design or due to system limitations in which deep paginations can bog the system[^4], making this an unreliable method to get the data[^5]. Meaning that we will need a different strategy to retrieve the 30M records.
 
-This brings us to the next strategy: using [SoQL](https://dev.socrata.com/docs/queries/), the query language of the Socrata APIs. SoQL is quite similar to SQL, with the key difference that its syntax is structured to work within a URL format.
+This brings us to the next strategy: using [SoQL](https://dev.socrata.com/docs/queries/), the query language of the Socrata API. SoQL is quite similar to SQL, with the key difference that its syntax is structured to work within a URL format.
+
+We will send an HTTP request to the server to query individual batches of invoices corresponding to a specific year (based on the `date` variable). We represent this as follows.
+
+![Fetching each year individually: an incremental approach. The queries in the blocks are written in SQL for readability.](img/soql_approach.png)
+
+This approach limits pagination to the number of years in the dataset rather than the total number of records. By fetching data in yearly batches, our requests won’t get stuck at an offset of 20 million, as each year contains fewer than 3 million records.
 
 **Why are we spending so much time on this?** Understanding our data source's quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we **design** our data pipeline. So it's worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.
 

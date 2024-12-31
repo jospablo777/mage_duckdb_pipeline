@@ -295,9 +295,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>The dataset documentation also informs us that, to date, it consists of more than 30 million rows. Now that we know the endpoint and the size of the data, we’re ready to pull the data, right?</p>
 <p>A sensible approach would be to retrieve the data sequentially using the paging method described in the <a href="https://dev.socrata.com/docs/paging">SODA documentation</a>. This method allows us to fetch the data in manageable batches, specified by the <code>$limit</code> parameter, while navigating through the dataset using the <code>$offset</code> parameter. The process is illustrated in the following diagram:</p>
-<p>[IMAGE]</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/pagination_approach.png" class="img-fluid figure-img"></p>
+<figcaption>Later rows of the data can’t be fetched due to system limits.</figcaption>
+</figure>
+</div>
 <p>Naturally, I started with this approach to find a limitation in the API that was not documented. When we get to the point of pulling the records around row 20M, the data loader will get stuck, and no information will be pulled. This might be by design or due to system limitations in which deep paginations can bog the system<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>, making this an unreliable method to get the data<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>. Meaning that we will need a different strategy to retrieve the 30M records.</p>
-<p>This brings us to the next strategy: using <a href="https://dev.socrata.com/docs/queries/">SoQL</a>, the query language of the Socrata APIs. SoQL is quite similar to SQL, with the key difference that its syntax is structured to work within a URL format.</p>
+<p>This brings us to the next strategy: using <a href="https://dev.socrata.com/docs/queries/">SoQL</a>, the query language of the Socrata API. SoQL is quite similar to SQL, with the key difference that its syntax is structured to work within a URL format.</p>
+<p>We will send an HTTP request to the server to query individual batches of invoices corresponding to a specific year (based on the <code>date</code> variable). We represent this as follows.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/soql_approach.png" class="img-fluid figure-img"></p>
+<figcaption>Fetching each year individually: an incremental approach. The queries in the blocks are written in SQL for readability.</figcaption>
+</figure>
+</div>
+<p>This approach limits pagination to the number of years in the dataset rather than the total number of records. By fetching data in yearly batches, our requests won’t get stuck at an offset of 20 million, as each year contains fewer than 3 million records.</p>
 <p><strong>Why are we spending so much time on this?</strong> Understanding our data source’s quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we <strong>design</strong> our data pipeline. So it’s worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.</p>
 <p>Now that we have a clearer understanding of the upstream stage of our data—the source:</p>
 <p><img src="img/soda_done_data_lifecycle_logos.png" class="img-fluid"> With this in mind, we can now move on to the ingestion step.</p>
@@ -305,6 +318,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="fetching-the-data" class="level2">
 <h2 class="anchored" data-anchor-id="fetching-the-data">Fetching the data</h2>
 <p>We are aware of the endpoint to request the data, and of some limitations of this API as well. We know that we cannot fetch the data as it is because at some point out pipeline will clog, and wont be able to take more data into the stream.</p>
+<p>Due to this we will write more complex in our HTTP request using SoQL…</p>
 <p>Bash execution</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">user@user-pc:~/mage_duckdb_pipeline$</span> mage run . socrata_iowa_liquor_pipeline</span>
