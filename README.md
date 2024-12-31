@@ -30,7 +30,23 @@ This project demonstrates how to build an efficient data pipeline to move data f
 ## Project structure
 
 ```
-TODO
+mage_duckdb_pipeline/
+├── docs/            # Website with the tutorial
+├── communication/   # Quarto, source code of the tutorial article
+├── transformers/    # Mage, transformer blocks are stored here
+├── data_loaders/    # Mage, data loader blocks are stored here
+├── custom/          # Mage, custom blocks are stored here
+├── data_exporters/  # Mage, data exporter blocks are stored here
+├── pipelines/       # Mage, our pipelines are stored here
+│   └── socrata_iowa_liquor_pipeline/
+├── data/            # Directory for storing data, including the .duckdb file
+├── metadata.yaml    # Keep record of Mage blocks relationships and activity
+├── requirements.txt # Project dependencies
+├── .nojekyll
+├── dont_forget.sh   # Terminal instructions I don't want to forget
+├── LICENSE
+└── README.md
+
 ```
 
 ## Installation and Setup
