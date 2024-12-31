@@ -121,7 +121,48 @@ This brings us to our current challenge: finding a more agile and efficient way 
 
 ## Solution implementation: getting started
 
-As per our outline, we know we shall star pulling the data from the API, so...
+As outlined earlier, the first step involves pulling the data from the API. However, before that, we need to set up Mage and configure the rest of our environment. To begin, we’ll clone the Git project and navigate to the project directory:
+
+```{bash}
+#| label: clone_repo
+#| include: true
+#| eval: false
+
+git clone https://github.com/jospablo777/mage_duckdb_pipeline.git
+cd mage_duckdb_pipeline
+```
+
+Next, we’ll set up a virtual environment and install the necessary libraries:
+
+```{bash}
+#| label: setup_venv
+#| include: true
+#| eval: false
+
+python -m venv venv             # The first 'venv' is the command, the second is the name of the folder for the virtual environment.
+source venv/bin/activate        # Activate the virtual environment.
+pip install -r requirements.txt # Install dependencies from the requirements file.
+```
+
+The `requirements.txt` file contains the libraries required for the project, with the key players being `mage-ai` and `duckdb`. Now, that we have all our dependencies ready we can start our Mage project with:
+
+```{bash}
+#| label: start_mage
+#| include: true
+#| eval: false
+
+mage start
+```
+
+This will open a tab in our browser that looks like this:
+
+![Mage home UI.](img/mage_ui_main.png)
+
+One of the strongest of Mage is its easy user interface. Here we will be able to create our data pipelines, I named the one in our example `socrata_iowa_liquor_pipeline`. After creating the pipeline, we can navigate to it with the left panel, and go to the `Pipelines` section, there it should be the pipeline we just created. 
+
+![](img/mage_ui_left_panel.png)
+
+When we open it, also in the left panes, we can go to the `Edit pipeline` section and start building
 
 Token
 
@@ -158,6 +199,7 @@ Pipeline run completed.
 
 
 ```{r}
+#| label: dbi_connection
 conn2 <- DBI::dbConnect(
   drv = duckdb::duckdb(),
   dbdir = "../data/iowa_liquor.duckdb",
@@ -166,6 +208,7 @@ conn2 <- DBI::dbConnect(
 ```
 
 ```{sql}
+#| label: example_query
 #| output.var: query2
 #| echo: true
 #| output: true
@@ -180,6 +223,7 @@ tibble::tibble(query2)
 ```
 
 ```{python}
+#| label: python_conn
 import duckdb
 
 con_py = duckdb.connect("../data/iowa_liquor.duckdb", read_only=True)

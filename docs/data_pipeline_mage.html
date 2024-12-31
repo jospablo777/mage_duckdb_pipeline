@@ -128,8 +128,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#our-problem" id="toc-our-problem" class="nav-link" data-scroll-target="#our-problem">Our problem</a></li>
   <li><a href="#solution-implementation-getting-started" id="toc-solution-implementation-getting-started" class="nav-link" data-scroll-target="#solution-implementation-getting-started">Solution implementation: getting started</a></li>
-  <li><a href="#about-the-polar-bear-in-the-header" id="toc-about-the-polar-bear-in-the-header" class="nav-link" data-scroll-target="#about-the-polar-bear-in-the-header">About the polar bear in the header</a></li>
-  <li><a href="#cited-works-and-recommended-readings" id="toc-cited-works-and-recommended-readings" class="nav-link" data-scroll-target="#cited-works-and-recommended-readings">Cited works and recommended readings</a></li>
   </ul>
 </nav>
     </div>
@@ -239,167 +237,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="solution-implementation-getting-started" class="level2">
 <h2 class="anchored" data-anchor-id="solution-implementation-getting-started">Solution implementation: getting started</h2>
-<p>As per our outline, we know we shall star pulling the data from the API, so…</p>
-<p>Token</p>
+<p>As outlined earlier, the first step involves pulling the data from the API. However, before that, we need to set up Mage and configure the rest of our environment. To begin, we’ll clone the Git project and navigate to the project directory:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>headers <span class="op">=</span> {<span class="st">"X-App-Token"</span>: <span class="st">"YOUR_TOKEN"</span>}</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>response <span class="op">=</span> requests.get(data_url, headers<span class="op">=</span>headers)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/jospablo777/mage_duckdb_pipeline.git</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> mage_duckdb_pipeline</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Bash execution</p>
+<p>Next, we’ll set up a virtual environment and install the necessary libraries:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">user@user-pc:~/mage_duckdb_pipeline$</span> mage run . socrata_iowa_liquor_pipeline</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Fetching</span> the records-per-year metadata. This might take a couple minutes..</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Done!</span> We have our year record metadata.</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">SODA</span> data pull started.</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Years</span> to be fetched: 2017, 2018, 2019, 2020, 2021.</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="ex">Fetching</span> data: 100%<span class="kw">|</span><span class="ex">█████████████████████████████████████</span><span class="kw">|</span> <span class="ex">5/5</span> [10:08<span class="op">&lt;</span>00:00, 121.69s/it]</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Product-related</span> new variables, generated.</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="ex">Sales</span> and price related metrics, computed.</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="ex">Volume-based</span> features, computed.</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">Time-based</span> features, computed.</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="ex">Data</span> loaded to your DuckDB database!</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="ex">Pipeline</span> run completed.</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> venv venv             <span class="co"># The first 'venv' is the command, the second is the name of the folder for the virtual environment.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> venv/bin/activate        <span class="co"># Activate the virtual environment.</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">-r</span> requirements.txt <span class="co"># Install dependencies from the requirements file.</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>The <code>requirements.txt</code> file contains the libraries required for the project, with the key players being <code>mage-ai</code> and <code>duckdb</code>. Now, that we have all our dependencies ready we can start our Mage project with:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>conn2 <span class="ot">&lt;-</span> DBI<span class="sc">::</span><span class="fu">dbConnect</span>(</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">drv =</span> duckdb<span class="sc">::</span><span class="fu">duckdb</span>(),</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">dbdir =</span> <span class="st">"../data/iowa_liquor.duckdb"</span>,</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">read_only =</span> <span class="cn">TRUE</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mage</span> start</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-output.var="query2">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> iowa_liquor_sales</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">10</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This will open a tab in our browser that looks like this:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/mage_ui_main.png" class="img-fluid figure-img"></p>
+<figcaption>Mage home UI.</figcaption>
+</figure>
 </div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>tibble<span class="sc">::</span><span class="fu">tibble</span>(query2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 10 × 36
-   invoice_line_no date                store name          address city  zipcode
-   &lt;chr&gt;           &lt;dttm&gt;              &lt;chr&gt; &lt;chr&gt;         &lt;chr&gt;   &lt;chr&gt; &lt;chr&gt;  
- 1 S10440300006    2013-02-05 00:00:00 2655  HY-VEE FOOD … 1200 S… CLAR… 51632  
- 2 S16464700176    2013-12-23 00:00:00 2638  HY-VEE WINE … 5925 U… CEDA… 50613  
- 3 S12001000067    2013-05-02 00:00:00 2561  HY-VEE FOOD … 4605 F… DES … 50321  
- 4 S12643000007    2013-06-06 00:00:00 3973  MMDG SPIRITS… 126A W… AMES  50014  
- 5 S14029600009    2013-08-21 00:00:00 3776  WAL-MART 511… 3101 W… DAVE… 52806  
- 6 S15244000066    2013-10-21 00:00:00 2190  CENTRAL CITY… 1460 2… DES … 50314  
- 7 S10238500019    2013-01-24 00:00:00 4023  WAL-MART 138… 1515 S… BOONE 50036  
- 8 S13319200017    2013-07-11 00:00:00 4426  LIQUOR AND G… 114 CE… MARS… 50158  
- 9 S14901500074    2013-10-02 00:00:00 4129  CYCLONE LIQU… 626 LI… AMES  50010  
-10 S15397800035    2013-10-29 00:00:00 2565  HY-VEE FOOD … 819 N … SPEN… 51301  
-# ℹ 29 more variables: store_location &lt;chr&gt;, county_number &lt;chr&gt;, county &lt;chr&gt;,
-#   category &lt;chr&gt;, category_name &lt;chr&gt;, vendor_no &lt;chr&gt;, vendor_name &lt;chr&gt;,
-#   itemno &lt;chr&gt;, im_desc &lt;chr&gt;, pack &lt;dbl&gt;, bottle_volume_ml &lt;dbl&gt;,
-#   state_bottle_cost &lt;dbl&gt;, state_bottle_retail &lt;dbl&gt;, sale_bottles &lt;dbl&gt;,
-#   sale_dollars &lt;dbl&gt;, sale_liters &lt;dbl&gt;, sale_gallons &lt;dbl&gt;,
-#   liquor_type &lt;chr&gt;, is_premium &lt;lgl&gt;, bottle_size &lt;chr&gt;,
-#   gov_profit_margin &lt;dbl&gt;, gov_retail_markup_percentage &lt;dbl&gt;, …</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> duckdb</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>con_py <span class="op">=</span> duckdb.<span class="ex">connect</span>(<span class="st">"../data/iowa_liquor.duckdb"</span>, read_only<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>polars_df <span class="op">=</span> con_py.sql(<span class="st">"SELECT liquor_type, bottle_size, price_per_liter FROM iowa_liquor_sales LIMIT 10"</span>).pl()</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>polars_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output-display">
-<div><style>
-.dataframe > thead > tr > th,
-.dataframe > tbody > tr > td {
-  text-align: right;
-  white-space: pre-wrap;
-}
-</style>
-<small>shape: (10, 3)</small>
-<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th">liquor_type</th>
-<th data-quarto-table-cell-role="th">bottle_size</th>
-<th data-quarto-table-cell-role="th">price_per_liter</th>
-</tr>
-<tr class="odd">
-<th>str</th>
-<th>str</th>
-<th>f32</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>"Whisky"</td>
-<td>"large"</td>
-<td>16.651428</td>
-</tr>
-<tr class="even">
-<td>"Whisky"</td>
-<td>"medium"</td>
-<td>29.92</td>
-</tr>
-<tr class="odd">
-<td>"Cream"</td>
-<td>"medium"</td>
-<td>25.0</td>
-</tr>
-<tr class="even">
-<td>"Rum"</td>
-<td>"large"</td>
-<td>10.91</td>
-</tr>
-<tr class="odd">
-<td>"Whisky"</td>
-<td>"medium"</td>
-<td>42.0</td>
-</tr>
-<tr class="even">
-<td>"Whisky"</td>
-<td>"large"</td>
-<td>11.994286</td>
-</tr>
-<tr class="odd">
-<td>"Rum"</td>
-<td>"large"</td>
-<td>6.497143</td>
-</tr>
-<tr class="even">
-<td>"Whisky"</td>
-<td>"medium"</td>
-<td>25.879999</td>
-</tr>
-<tr class="odd">
-<td>"Gin"</td>
-<td>"medium"</td>
-<td>10.013333</td>
-</tr>
-<tr class="even">
-<td>"Vodka"</td>
-<td>"medium"</td>
-<td>26.24</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>polars_df.height</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>10</code></pre>
-</div>
-</div>
-</section>
-<section id="about-the-polar-bear-in-the-header" class="level2">
-<h2 class="anchored" data-anchor-id="about-the-polar-bear-in-the-header">About the polar bear in the header</h2>
-<p>https://knowyourmeme.com/memes/bonjour-bear</p>
-</section>
-<section id="cited-works-and-recommended-readings" class="level2">
-<h2 class="anchored" data-anchor-id="cited-works-and-recommended-readings">Cited works and recommended readings</h2>
-<ul>
-<li>Reis, J., &amp; Housley, M. (2022). <em>Fundamentals of data engineering: Plan and build robust data systems</em>. O’Reilly Media.</li>
-</ul>
 
 
 </section>
