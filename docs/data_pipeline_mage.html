@@ -315,7 +315,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>This approach limits pagination to the number of years in the dataset rather than the total number of records. By fetching data in yearly batches, our requests won’t get stuck at an offset of 20 million, as each year contains fewer than 3 million records.</p>
 <p><strong>Why are we spending so much time on this?</strong> Understanding our data source’s quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we <strong>design</strong> our data pipeline. So it’s worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.</p>
-<p>Now that we have a clearer understanding of the upstream stage of our data source.</p>
+<p>Now, we have a clearer understanding of the upper stage in our stream, the data source.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="img/soda_done_data_lifecycle_logos.png" class="img-fluid figure-img"></p>

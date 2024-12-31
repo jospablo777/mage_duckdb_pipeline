@@ -205,7 +205,7 @@ This approach limits pagination to the number of years in the dataset rather tha
 
 **Why are we spending so much time on this?** Understanding our data source's quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we **design** our data pipeline. So it's worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.
 
-Now that we have a clearer understanding of the upstream stage of our data source.
+Now, we have a clearer understanding of the upper stage in our stream, the data source.
 
 ![Progress we've made so far.](img/soda_done_data_lifecycle_logos.png)
 
