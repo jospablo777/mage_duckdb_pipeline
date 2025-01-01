@@ -187,7 +187,7 @@ The [dataset's documentation](https://dev.socrata.com/foundry/data.iowa.gov/m3tr
 https://data.iowa.gov/resource/m3tr-qhgy.csv
 ```
 
-The dataset documentation also informs us that, to date, it consists of more than 30 million rows. Now that we know the endpoint and the size of the data, we’re ready to pull the data, right?
+The dataset documentation also informs us that, to date, it consists of more than 30 million rows. Now that we know the endpoint and the size of the data, we're ready to pull the data, right?
 
 A sensible approach would be to retrieve the data sequentially using the paging method described in the [SODA documentation](https://dev.socrata.com/docs/paging). This method allows us to fetch the data in manageable batches, specified by the `$limit` parameter, while navigating through the dataset using the `$offset` parameter. The process is illustrated in the following diagram:
 
@@ -201,7 +201,7 @@ We will send an HTTP request to the server to query individual batches of invoic
 
 ![Fetching each year individually: an incremental approach. The queries in the blocks are written in SQL for readability.](img/soql_approach.png)
 
-This approach limits pagination to the number of years in the dataset rather than the total number of records. By fetching data in yearly batches, our requests won’t get stuck at an offset of 20 million, as each year contains fewer than 3 million records.
+This approach limits pagination to the number of years in the dataset rather than the total number of records. By fetching data in yearly batches, our requests won't get stuck at an offset of 20 million, as each year contains fewer than 3 million records.
 
 **Why are we spending so much time on this?** Understanding our data source's quirks, perks, and limitations is crucial because, ultimately, this knowledge will shape how we **design** our data pipeline. So it's worth it to spend some time understanding the source system; it will save us headaches and result in a better design that is easier to maintain from the beginning.
 
@@ -236,7 +236,7 @@ This request will be sent using the `GET` HTTP method.
 With this in mind, we can return to Mage. We'll begin by creating the first three blocks, which will focus on retrieving metadata. The primary purpose of these blocks is to provide the downstream block with the necessary information on what data to fetch from the endpoint and how to fetch it.
 
 :::{.callout-note}
-In this tutorial, we will adopt the writing style of [*The Rust Programming Language*](https://doc.rust-lang.org/book/) book, where the file path is shown before each code block. This approach allows you to easily follow the project’s structure. The complete code for the project is available on the [GitHub repo](https://github.com/jospablo777/mage_duckdb_pipeline).
+In this tutorial, we will adopt the writing style of [*The Rust Programming Language*](https://doc.rust-lang.org/book/) book, where the file path is shown before each code block. This approach allows you to easily follow the project's structure. The complete code for the project is available on the [GitHub repo](https://github.com/jospablo777/mage_duckdb_pipeline).
 :::
 
 ### Wrinting our first Mage blocks
@@ -282,7 +282,7 @@ def test_output(output, *args) -> None:
     """
     assert output is not None, 'The output is undefined' # <3>
 ```
-1. **Imports.**
+1. **Imports:** block's prelude.
 2. **Main functionality:** since this is a data loader I has the `@data_loader` decorator on top.
 3. **Test for data validation:** accepts the output data of the block. If any of the tests fail, the block execution will also fail.
 
@@ -290,7 +290,7 @@ Mage provides a variety of templates designed to guide you and save time. These 
 
 
 
-Next, we’ll modify the template to suit our specific use case. Overwrite the content of your newly created block with the following code, and let's proceed to analyze it:
+Next, we'll modify the template to suit our specific use case. Overwrite the content of your newly created block with the following code, and let's proceed to analyze it:
 
 Filename: [`data_loaders/get_schema_from_metadata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/get_schema_from_metadata.py)
 ```{python}
@@ -344,9 +344,9 @@ def test_output(dictionary, *args) -> None:
 4. **Test decorator:** the `@test decorator` defines a test for validating the function's output.
 5. **Socrata to Polars type mapping:** the `SODA_TO_POLARS` dictionary maps Socrata data types to corresponding Polars types, ensuring compatibility.
 6. **Function decoration:** the loader function `load_data_schema_from_api` is decorated with `@data_loader` to integrate it into the Mage pipeline.
-7. **Endpoint definition:** The endpoint URL is dynamically generated using the global variables `DOMAIN` and `DATASET_ID`. This is where the schema metadata is fetched.
+7. **Endpoint definition:** the endpoint URL is dynamically generated using the global variables `DOMAIN` and `DATASET_ID`. This is where the schema metadata is fetched.
 8. **Dictionary comprehension:** the `schema` dictionary maps column names to their corresponding Polars types, based on the `SODA_TO_POLARS` dictionary. Unrecognized types default to `Utf8`.
-9. **Exclusion columns:** Columns with names starting with `:@computed_` are excluded from the schema.
+9. **Exclusion columns:** columns with names starting with `:@computed_` are excluded from the schema.
 10. **Test function:** the `@test` decorator validates the loader's output, ensuring it is a non-empty dictionary of the correct type.
 
 The primary goal of the `get_schema_from_metadata` block is to retrieve data type information to standardize batch ingestion. While Polars can infer data types based on the content they read, each batch may differ in structure. This inconsistency can lead to errors and prevent us from merging batches later. We can resolve this issue by specifying data types and ensuring a consistent schema across all batches.
