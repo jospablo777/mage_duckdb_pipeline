@@ -282,9 +282,9 @@ def test_output(output, *args) -> None:
     """
     assert output is not None, 'The output is undefined' # <3>
 ```
-1. Imports.
-2. Main functionality: since this is a data loader I has the `@data_loader` decorator on top.
-3. Test for data validation: accepts the output data of the block. If any of the tests fail, the block execution will also fail.
+1. **Imports.**
+2. **Main functionality:** since this is a data loader I has the `@data_loader` decorator on top.
+3. **Test for data validation:** accepts the output data of the block. If any of the tests fail, the block execution will also fail.
 
 Mage provides a variety of templates designed to guide you and save time. These templates were incredibly helpful when we[^6] first started building data pipelines. Notices the structure of a block, it is composed by three sections: library imports, a function, and a test. The function handles the main task of the block, while the test ensures that the block's main functionality works as intended.
 
@@ -349,6 +349,9 @@ def test_output(dictionary, *args) -> None:
 9. **Exclusion columns:** Columns with names starting with `:@computed_` are excluded from the schema.
 10. **Test function:** the `@test` decorator validates the loader's output, ensuring it is a non-empty dictionary of the correct type.
 
+The primary goal of the `get_schema_from_metadata` block is to retrieve data type information to standardize batch ingestion. While Polars can infer data types based on the content they read, each batch may differ in structure. This inconsistency can lead to errors and prevent us from merging batches later. We can resolve this issue by specifying data types and ensuring a consistent schema across all batches.
+
+Please notice that we use Polars for data transformation and manipulation. Compared with Pandas, Polars offers better performance and scalability, making it a more cost-effective choice for production systems. This [case study](https://pola.rs/posts/case-check-technology/) demonstrates that Polars can reduce computational costs, making it a good choice for projects that may eventually transition to production. Polars is a mature and robust library with extensive capabilities, making it an excellent choice for this project.
 
 With our first block created, we can explain how the Mage flow works. First... to finally pass the resulting data to the block downstream
 

@@ -394,15 +394,15 @@ Note
 <dl class="code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-5" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-5" data-code-lines="1,7" data-code-annotation="1">Imports.</span>
+<span data-code-cell="annotated-cell-5" data-code-lines="1,7" data-code-annotation="1"><strong>Imports.</strong></span>
 </dd>
 <dt data-target-cell="annotated-cell-5" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-5" data-code-lines="10,18" data-code-annotation="2">Main functionality: since this is a data loader I has the <code>@data_loader</code> decorator on top.</span>
+<span data-code-cell="annotated-cell-5" data-code-lines="10,18" data-code-annotation="2"><strong>Main functionality:</strong> since this is a data loader I has the <code>@data_loader</code> decorator on top.</span>
 </dd>
 <dt data-target-cell="annotated-cell-5" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-5" data-code-lines="21,26" data-code-annotation="3">Test for data validation: accepts the output data of the block. If any of the tests fail, the block execution will also fail.</span>
+<span data-code-cell="annotated-cell-5" data-code-lines="21,26" data-code-annotation="3"><strong>Test for data validation:</strong> accepts the output data of the block. If any of the tests fail, the block execution will also fail.</span>
 </dd>
 </dl>
 </div>
@@ -495,6 +495,8 @@ Note
 </dl>
 </div>
 </div>
+<p>The primary goal of the <code>get_schema_from_metadata</code> block is to retrieve data type information to standardize batch ingestion. While Polars can infer data types based on the content they read, each batch may differ in structure. This inconsistency can lead to errors and prevent us from merging batches later. We can resolve this issue by specifying data types and ensuring a consistent schema across all batches.</p>
+<p>Please notice that we use Polars for data transformation and manipulation. Compared with Pandas, Polars offers better performance and scalability, making it a more cost-effective choice for production systems. This <a href="https://pola.rs/posts/case-check-technology/">case study</a> demonstrates that Polars can reduce computational costs, making it a good choice for projects that may eventually transition to production. Polars is a mature and robust library with extensive capabilities, making it an excellent choice for this project.</p>
 <p>With our first block created, we can explain how the Mage flow works. First… to finally pass the resulting data to the block downstream</p>
 <p>[IMAGE]</p>
 <div class="cell">
