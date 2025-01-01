@@ -227,7 +227,7 @@ Our base query to fetch the data will look something like this:
 
 - [**Teal:**]{style="color:#008080;"} the endpoint for the data request.
 - [**Blue:**]{style="color:#4169E1;"} the `WHERE` clause of the SoQL query, used to filter records for the year 2013. The function `date_extract_y()` extracts the year from the `date` column.
-- [**Red:**]{style="color:#FF8C00;"} the `LIMIT` clause of the SoQL query, used to limit the response to 2000 records.
+- [**Orange:**]{style="color:#FF8C00;"} the `LIMIT` clause of the SoQL query, used to limit the response to 2000 records.
 
 Notice that the `?` symbol separates the endpoint from the query parameters, and each clause is separated by an `&` symbol. To indicate the start of a clause, a `$` is used.
 
@@ -235,17 +235,168 @@ This request will be sent using the `GET` HTTP method.
 
 With this in mind, we can return to Mage. We'll begin by creating the first three blocks, which will focus on retrieving metadata. The primary purpose of these blocks is to provide the downstream block with the necessary information on what data to fetch from the endpoint and how to fetch it.
 
+:::{.callout-note}
+In this tutorial, we will adopt the writing style of [*The Rust Programming Language*](https://doc.rust-lang.org/book/) book, where the file path is shown before each code block. This approach allows you to easily follow the project’s structure. The complete code for the project is available on the [GitHub repo](https://github.com/jospablo777/mage_duckdb_pipeline).
+:::
+
 ### Wrinting our first Mage blocks
 
-Here we will implement our first block, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to...
+Here we will implement our first block, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to our already created pipeline, `socrata_iowa_liquor_pipeline`. But if you want to follow this tutorial from scratch, you can also create a new pipeline, for example, `socrata_iowa_liquor_pipeline_from_scratch`, and continue working from there. With the intuitive Mage UI, it will be easy for you to create this new pipeline.
+
+Our first block:
 
 ![Creating our first block.](img/create_block.png)
 
-Here, select `Data loader`, then navigate to the creation option and select Python as the language, and then API as the source.
+Here, select the first option, **Data loader**, then navigate to the creation option and select Python as the language, and then API as the source, then name the block `get_schema_from_metadata`. When created, the block will come with a template like this:
 
-get_schema_from_metadata
-soda_records_per_year
-check_local_db
+Filename: [`data_loaders/get_schema_from_metadata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/get_schema_from_metadata.py)
+```{python}
+#| label: get_schema_from_metadata_1
+#| include: true
+#| eval: false
+
+import io
+import pandas as pd
+import requests
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test
+
+
+@data_loader
+def load_data_from_api(*args, **kwargs):
+    """
+    Template for loading data from API
+    """
+    url = ''
+    response = requests.get(url)
+
+    return pd.read_csv(io.StringIO(response.text), sep=',')
+
+
+@test
+def test_output(output, *args) -> None:
+    """
+    Template code for testing the output of the block.
+    """
+    assert output is not None, 'The output is undefined'
+```
+
+Mage provides a variety of templates designed to guide you and save time. These templates were incredibly helpful when we[^6] first started building data pipelines. Next, we’ll modify the template to suit our specific use case. Overwrite the content of your newly created block with the following code, and let's proceed to analyze it:
+
+Filename: [`data_loaders/get_schema_from_metadata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/get_schema_from_metadata.py)
+```{python}
+#| label: get_schema_from_metadata_2
+#| include: true
+#| eval: false
+
+import io
+import polars as pl # <1>
+import requests     # <2>
+if 'custom' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader # <3>
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test # <4>
+
+# Map API data types to Polars types
+SODA_TO_POLARS = { # <5>
+    "text": pl.Utf8,
+    "number": pl.Float64, 
+    "calendar_date": pl.Datetime("us"),
+    "floating_timestamp": pl.Datetime("us"),  
+}                  # <5>
+
+
+# Loads the schema (i.e., types) of our data set
+@data_loader
+def load_data_schema_from_api(*args, **kwargs):
+
+    url = 'https://{DOMAIN}/api/views/{DATASET_ID}'.format(**kwargs) # Data URL, DOMAIN and DATASET_ID are global variables in kwargs
+    response = requests.get(url)
+
+    metadata = response.json()
+    columns = metadata.get("columns", [])
+    schema = {
+        col["fieldName"]: SODA_TO_POLARS.get(col["dataTypeName"], pl.Utf8)
+        for col in columns
+        if not col["fieldName"].startswith(":@computed_") # Filters out columns that are not ins the data
+        }
+    
+    return schema
+
+@test
+def test_output(dictionary, *args) -> None:
+    assert dictionary is not None, "The output is undefined"
+    assert isinstance(dictionary, dict), "The output is not a dictionary"
+    assert len(dictionary) > 0, "The dictionary is empty"
+```
+
+3. Loader decorator.
+4. Tests.
+5. Polars mapping.
+
+[^6]: Little Mai and I 🐑.
+
+```{python}
+#| label: check_local_db_1
+#| include: true
+#| eval: false
+
+import os
+import duckdb  # <1>
+if 'custom' not in globals():
+    from mage_ai.data_preparation.decorators import custom
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test
+
+db_path = 'data/iowa_liquor.duckdb'
+
+@custom
+def check_last_year(*args, **kwargs):
+    """
+    Rethrieves the latest year in our local DuckDB database. If the table does not exist, it returns 0.
+
+    Returns:
+        last_year (int): year of the latest record in our local database.
+    """
+    conn = duckdb.connect("data/iowa_liquor.duckdb")
+    
+    try:
+        result = conn.execute("""
+        SELECT EXTRACT(YEAR FROM MAX(date)) FROM iowa_liquor_sales
+        """).fetchall()
+        last_year = result[0][0]
+
+    except duckdb.CatalogException as e:
+        print("The table doesn't exist; assigning rows_in_db=0")
+        last_year = 0
+
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        last_year = 0
+
+    # Close DB connections
+    conn.close()
+
+    return last_year
+
+
+ 
+@test
+def test_output(output, *args) -> None:
+    """
+    Test if there is an output and verifies its type.
+    """
+    assert output is not None, 'The output is undefined'
+    assert isinstance(output, int), 'The output is not int'
+```
+
+`get_schema_from_metadata`
+
+`soda_records_per_year`
+
+`check_local_db`
 
 Bash execution
 
