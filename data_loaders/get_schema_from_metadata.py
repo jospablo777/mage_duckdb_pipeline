@@ -1,7 +1,7 @@
 import io
 import polars as pl
 import requests
-if 'custom' not in globals():
+if 'data_loader' not in globals():
     from mage_ai.data_preparation.decorators import data_loader
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
