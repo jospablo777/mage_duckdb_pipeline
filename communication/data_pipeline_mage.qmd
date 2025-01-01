@@ -227,7 +227,7 @@ Our base query to fetch the data will look something like this:
 
 - [**Teal:**]{style="color:#008080;"} the endpoint for the data request.
 - [**Blue:**]{style="color:#4169E1;"} the `WHERE` clause of the SoQL query, used to filter records for the year 2013. The function `date_extract_y()` extracts the year from the `date` column.
-- [**Orange:**]{style="color:#FF8C00;"} the `LIMIT` clause of the SoQL query, used to limit the response to 2000 records.
+- [**Orange:**]{style="color:#FF8C00;"} the `LIMIT` clause of the SoQL query, used to limit the response to 2000 records. If we don't indicate this, the default will be used, which is 1000 records.
 
 Notice that the `?` symbol separates the endpoint from the query parameters, and each clause is separated by an `&` symbol. To indicate the start of a clause, a `$` is used.
 
@@ -255,16 +255,16 @@ Filename: [`data_loaders/get_schema_from_metadata.py`](https://github.com/jospab
 #| include: true
 #| eval: false
 
-import io
+import io # <1>
 import pandas as pd
 import requests
 if 'data_loader' not in globals():
     from mage_ai.data_preparation.decorators import data_loader
 if 'test' not in globals():
-    from mage_ai.data_preparation.decorators import test
+    from mage_ai.data_preparation.decorators import test # <1>
 
 
-@data_loader
+@data_loader # <2>
 def load_data_from_api(*args, **kwargs):
     """
     Template for loading data from API
@@ -272,18 +272,25 @@ def load_data_from_api(*args, **kwargs):
     url = ''
     response = requests.get(url)
 
-    return pd.read_csv(io.StringIO(response.text), sep=',')
+    return pd.read_csv(io.StringIO(response.text), sep=',') # <2>
 
 
-@test
+@test # <3>
 def test_output(output, *args) -> None:
     """
     Template code for testing the output of the block.
     """
-    assert output is not None, 'The output is undefined'
+    assert output is not None, 'The output is undefined' # <3>
 ```
+1. Imports.
+2. Main functionality: since this is a data loader I has the `@data_loader` decorator on top.
+3. Test for data validation: accepts the output data of the block. If any of the tests fail, the block execution will also fail.
 
-Mage provides a variety of templates designed to guide you and save time. These templates were incredibly helpful when we[^6] first started building data pipelines. Next, we’ll modify the template to suit our specific use case. Overwrite the content of your newly created block with the following code, and let's proceed to analyze it:
+Mage provides a variety of templates designed to guide you and save time. These templates were incredibly helpful when we[^6] first started building data pipelines. Notices the structure of a block, it is composed by three sections: library imports, a function, and a test. The function handles the main task of the block, while the test ensures that the block's main functionality works as intended.
+
+
+
+Next, we’ll modify the template to suit our specific use case. Overwrite the content of your newly created block with the following code, and let's proceed to analyze it:
 
 Filename: [`data_loaders/get_schema_from_metadata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/get_schema_from_metadata.py)
 ```{python}
@@ -294,7 +301,7 @@ Filename: [`data_loaders/get_schema_from_metadata.py`](https://github.com/jospab
 import io
 import polars as pl # <1>
 import requests     # <2>
-if 'custom' not in globals():
+if 'data_loader' not in globals():
     from mage_ai.data_preparation.decorators import data_loader # <3>
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test # <4>
@@ -309,32 +316,43 @@ SODA_TO_POLARS = { # <5>
 
 
 # Loads the schema (i.e., types) of our data set
-@data_loader
+@data_loader # <6>
 def load_data_schema_from_api(*args, **kwargs):
 
-    url = 'https://{DOMAIN}/api/views/{DATASET_ID}'.format(**kwargs) # Data URL, DOMAIN and DATASET_ID are global variables in kwargs
+    url = 'https://{DOMAIN}/api/views/{DATASET_ID}'.format(**kwargs) # <7>
     response = requests.get(url)
 
     metadata = response.json()
     columns = metadata.get("columns", [])
     schema = {
-        col["fieldName"]: SODA_TO_POLARS.get(col["dataTypeName"], pl.Utf8)
+        col["fieldName"]: SODA_TO_POLARS.get(col["dataTypeName"], pl.Utf8) # <8>
         for col in columns
-        if not col["fieldName"].startswith(":@computed_") # Filters out columns that are not ins the data
+        if not col["fieldName"].startswith(":@computed_") # <9>
         }
     
     return schema
 
-@test
+@test # <10>
 def test_output(dictionary, *args) -> None:
     assert dictionary is not None, "The output is undefined"
     assert isinstance(dictionary, dict), "The output is not a dictionary"
-    assert len(dictionary) > 0, "The dictionary is empty"
+    assert len(dictionary) > 0, "The dictionary is empty" # <10>
 ```
+1. **Polars:** used for data manipulation and type mapping throughout the project.
+2. **HTTP library:** `requests` is used to send HTTP requests to the API.
+3. **Loader decorator:** the `@data_loader` decorator marks the function as a Mage data loader block.
+4. **Test decorator:** the `@test decorator` defines a test for validating the function's output.
+5. **Socrata to Polars type mapping:** the `SODA_TO_POLARS` dictionary maps Socrata data types to corresponding Polars types, ensuring compatibility.
+6. **Function decoration:** the loader function `load_data_schema_from_api` is decorated with `@data_loader` to integrate it into the Mage pipeline.
+7. **Endpoint definition:** The endpoint URL is dynamically generated using the global variables `DOMAIN` and `DATASET_ID`. This is where the schema metadata is fetched.
+8. **Dictionary comprehension:** the `schema` dictionary maps column names to their corresponding Polars types, based on the `SODA_TO_POLARS` dictionary. Unrecognized types default to `Utf8`.
+9. **Exclusion columns:** Columns with names starting with `:@computed_` are excluded from the schema.
+10. **Test function:** the `@test` decorator validates the loader's output, ensuring it is a non-empty dictionary of the correct type.
 
-3. Loader decorator.
-4. Tests.
-5. Polars mapping.
+
+With our first block created, we can explain how the Mage flow works. First... to finally pass the resulting data to the block downstream
+
+[IMAGE]
 
 [^6]: Little Mai and I 🐑.
 
