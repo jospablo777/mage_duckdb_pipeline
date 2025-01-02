@@ -73,7 +73,7 @@ def load_data_from_api(schema,
 
     # Use ThreadPoolExecutor for concurrent API calls
     df_list = []
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    with ThreadPoolExecutor(max_workers = 3) as executor:
         # Submit tasks to the executor
         futures = {executor.submit(fetch_batch, url): url for url in requests_list}
 
