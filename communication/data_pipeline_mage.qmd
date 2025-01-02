@@ -236,7 +236,7 @@ This request will be sent using the `GET` HTTP method.
 With this in mind, we can return to Mage. We'll begin by creating the first three blocks, which will focus on retrieving metadata. The primary purpose of these blocks is to provide the downstream block with the necessary information on what data to fetch from the endpoint and how to fetch it.
 
 :::{.callout-note}
-In this tutorial, we will adopt the writing style of [*The Rust Programming Language*](https://doc.rust-lang.org/book/) book, where the file path is shown before each code block. This approach allows you to easily follow the project's structure. The complete code for the project is available on the [GitHub repo](https://github.com/jospablo777/mage_duckdb_pipeline).
+In this tutorial, we will adopt the writing style of [*The Rust Programming Language*](https://doc.rust-lang.org/book/) book, where the file path is shown before each code block. This approach allows you to easily follow the project's structure. The complete code for the project is available on the [GitHub repo](https://github.com/jospablo777/mage_duckdb_pipeline). Also, the function docstrings have been removed from this article. However, you can review the complete technical documentation of each function by checking the files in the repo.
 :::
 
 ### Wrinting our first Mage blocks
@@ -287,8 +287,6 @@ def test_output(output, *args) -> None:
 3. **Test for data validation:** accepts the output data of the block. If any of the tests fail, the block execution will also fail.
 
 Mage provides a variety of templates designed to guide you and save time. These templates were incredibly helpful when we[^6] first started building data pipelines. Notices the structure of a block, it is composed by three sections: library imports, a function, and a test. The function handles the main task of the block, while the test ensures that the block's main functionality works as intended.
-
-
 
 Next, we'll modify the template to suit our specific use case. Overwrite the content of your newly created block with the following code, and let's proceed to analyze it:
 
@@ -357,64 +355,141 @@ We can illustrate how the Mage flow operates using our first block. Initially, t
 
 When you first looked at @fig-concrete-project-outline, you might have wondered why storage spans the entire process and why Apache Arrow and Parquet are included in the storage block alongside DuckDB. This is because data storage underpins every major stage, with data being stored multiple times throughout its life cycle. Mage uses PyArrow to handle data serialization and deserialization between blocks during these storage steps[^7]. For disk storage, PyArrow serializes the data into the Parquet format. For more details, you can check the the [documentation](https://docs.mage.ai/guides/blocks/polars).
 
+Below is an overview of how Mage blocks function:
+
 ![Overview of Mage blocks functioning.](img/mage_blocks_function.png)
 
-[^6]: Little Mai and I 🐑.
-[^7]: This occurs when the returned object is a data frame (Polars or Pandas). In this concrete case, that won't happen since we're returning a dictionary, but in the following blocks, it will be the case since the objects transferred will be Polars data frames. With dictionaries, serialization will still occur but in a [JSON format](https://github.com/mage-ai/mage-ai/issues/4725).
+Congrats! You just implemented your first Mage block. Let's test it, you can do this with the "play" icon in the header of the block:
 
+![](img/testing_mage_block.png)
+
+After the block runs, you should be able to see the output in the tail of the block:
+
+![](img/testing_mage_block_2.png)
+
+We see a message indicating that the test passed and how Mage tries to display the output dictionary.
+
+Next, we will query the number of records (invoices) per year. To achieve this, we will create a data loader block named `soda_records_per_year.` The content of this block will look as follows:
+
+Filename: [`data_loaders/soda_records_per_year.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/soda_records_per_year.py)
 ```{python}
-#| label: check_local_db_1
+#| label: soda_records_per_year
 #| include: true
 #| eval: false
 
-import os
-import duckdb  # <1>
-if 'custom' not in globals():
-    from mage_ai.data_preparation.decorators import custom
+import io # <1>
+import polars as pl
+import requests
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
 if 'test' not in globals():
     from mage_ai.data_preparation.decorators import test
 
-db_path = 'data/iowa_liquor.duckdb'
+
+@data_loader # <2>
+def load_data_from_api(*args, **kwargs):
+    # SoQL to get the the number of invoices per year
+    data_url = "https://data.iowa.gov/resource/m3tr-qhgy.csv?$select=date_extract_y(date) AS year, count(invoice_line_no) AS rows&$group=date_extract_y(date)"
+    print("\n")
+    print("Fetching the records-per-year metadata. This might take a couple minutes..")
+    response = requests.get(data_url)
+    print("Done! We have our year record metadata.\n")
+    data = pl.read_csv(io.StringIO(response.text))
+    
+    return data # <2>
+
+
+@test # <3>
+def test_output(output, *args) -> None:
+    assert output is not None, 'The output is undefined'
+    assert isinstance(output, pl.DataFrame), 'The output is not a Polars DataFrame' # <3>
+
+```
+1. You might have noticed that we use the `io` module to handle the API responses. Specifically, we utilize the `StringIO()` class to treat the response as a document. Otherwise, Polars will complain. 
+2. Here, we make a SoQL query to the API, and load the response into a Polars data frame.
+3. We also validate that the block's output is not empty and confirm that it is a Polars data frame.
+
+In this block we request the records per year to the API, for this we make use of the SoQL language provided by the API developers:
+
+[https://data.iowa.gov/resource/m3tr-qhgy.csv]{style="color:#008080;"}?[\$select=date_extract_y(date) AS year, count(invoice_line_no) AS rows&\$group=date_extract_y(date)]{style="color:#4169E1;"}
+
+And again, we can dissect this request:
+
+- [**Teal:**]{style="color:#008080;"} endpoint.
+- [**Blue:**]{style="color:#4169E1;"} query.
+
+If we translate this query to SQL, we would have something like this:
+
+```{sql}
+#| label: soda_records_per_year_to_sql
+#| include: true
+#| eval: false
+
+SELECT YEAR(date) AS year
+       COUNT(invoice_line_no) AS rows
+FROM m3tr-qhgy -- Iowa Liquor Sales table
+GROUP BY YEAR(date)
+```
+
+The output should be a table displaying the number of records for each year. This information will be used to determine the `$limit` clause when retrieving data later.
+
+To complete the upstream blocks, we will create another block to check the data available in our local DuckDB database. I named this block `check_local_db`. It is of type "custom," though it could also have been implemented as a data loader.
+
+Filename: [`custom/check_local_db.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/custom/check_local_db.py)
+```{python}
+#| label: check_local_db
+#| include: true
+#| eval: false
+# -- snip --
+
+db_path = 'data/iowa_liquor.duckdb' # <1>
 
 @custom
 def check_last_year(*args, **kwargs):
-    """
-    Rethrieves the latest year in our local DuckDB database. If the table does not exist, it returns 0.
-
-    Returns:
-        last_year (int): year of the latest record in our local database.
-    """
-    conn = duckdb.connect("data/iowa_liquor.duckdb")
+    conn = duckdb.connect("data/iowa_liquor.duckdb") # <2>
     
-    try:
+    try: # <3>
         result = conn.execute("""
         SELECT EXTRACT(YEAR FROM MAX(date)) FROM iowa_liquor_sales
         """).fetchall()
-        last_year = result[0][0]
+        last_year = result[0][0] # <3>
 
-    except duckdb.CatalogException as e:
+    except duckdb.CatalogException as e: # <4>
         print("The table doesn't exist; assigning rows_in_db=0")
-        last_year = 0
+        last_year = 0 # <4>
 
-    except Exception as e:
+    except Exception as e: # <5>
         print(f"An unexpected error occurred: {e}")
-        last_year = 0
+        last_year = 0 # <5>
 
     # Close DB connections
-    conn.close()
+    conn.close() # <6>
 
-    return last_year
+    return last_year # <7>
 
-
- 
-@test
-def test_output(output, *args) -> None:
-    """
-    Test if there is an output and verifies its type.
-    """
-    assert output is not None, 'The output is undefined'
-    assert isinstance(output, int), 'The output is not int'
+# -- snip --
 ```
+1. Define the path to the database. For this project, the database will be stored in the file `data/iowa_liquor.duckdb`.
+2. Establish a connection to the local database. If the file `iowa_liquor.duckdb` does not exist, DuckDB will automatically create it.
+3. Query the date of the most recent invoice in the database and extract the year. Use `.fetchall()` to retrieve the query output as a Python object[^8].
+4. If the table does not yet exist in the database, return `0` as the year.
+5. If any other exception occurs, also return `0` as the year.
+6. Explicitly close the database connection to avoid blocking access for downstream processes.
+7. Return the most recent year as an `int`.
+
+This block is designed to monitor the local database, enabling efficient updates by avoiding the need to fetch all data every time. This approach ensures faster processing and reduces resource consumption.
+
+With that, we've completed the first layer of Mage blocks. The next step downstream involves retrieving the data of interest. In this stage, we will use the outputs of the three blocks we just created
+
+[^6]: Little Mai and I 🐑.
+[^7]: This occurs when the returned object is a data frame (Polars or Pandas). In this concrete case, that won't happen since we're returning a dictionary, but in the following blocks, it will be the case since the objects transferred will be Polars data frames. With dictionaries, serialization will still occur but in [JSON format](https://github.com/mage-ai/mage-ai/issues/4725).
+[^8]: We can also use `.pl()` to cast the results into a Polars data frame or `.df()` for a Pandas one.
+
+### Pulling the Iowa Liquor Sales data
+
+With the metadata at hand now we will be able to get the data of interest (the sales data)
+
+
 
 `get_schema_from_metadata`
 

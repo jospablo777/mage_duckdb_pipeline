@@ -10,12 +10,12 @@ blocks:
   language: python
   name: get_schema_from_metadata
   retry_config: null
-  status: updated
+  status: executed
   timeout: null
   type: data_loader
   upstream_blocks: []
   uuid: get_schema_from_metadata
-- all_upstream_blocks_executed: true
+- all_upstream_blocks_executed: false
   color: null
   configuration: {}
   downstream_blocks:
@@ -31,8 +31,8 @@ blocks:
   type: data_loader
   upstream_blocks:
   - get_schema_from_metadata
-  - check_local_db
   - soda_records_per_year
+  - check_local_db
   uuid: pull_data_from_socrata
 - all_upstream_blocks_executed: false
   color: null
