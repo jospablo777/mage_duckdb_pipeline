@@ -62,10 +62,10 @@ def load_data_from_api(schema,
     def fetch_batch(data_url):
         """Fetch data for a given URL."""
         try:
-            #print(f"Fetching data from: {data_url}") # Useful to debug, but too vebose
+            #print(f"Fetching data from: {data_url}") # Useful to debug, but too verbose
             response = requests.get(data_url)
             response.raise_for_status()  # Raise an error for bad responses
-            #print(f"Data fetched successfully from: {data_url}") # Useful to debug, but too vebose
+            #print(f"Data fetched successfully from: {data_url}") # Useful to debug, but too verbose
             return pl.read_csv(io.StringIO(response.text), schema = schema)
         except Exception as e:
             print(f"Error fetching data from {data_url}: {e}")
