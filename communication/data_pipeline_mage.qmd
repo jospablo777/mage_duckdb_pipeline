@@ -57,7 +57,7 @@ Why Polars and DuckDB? The answer lies in the size and nature of the dataset we'
 
 Returning to the data lifecycle diagram, we can land it in a more concrete way to show how our project will be built and executed:
 
-![The data lifecycle and a more concrete overview of what **we will implement** in this project. Modified from "Fundamentals of Data Engineering" by Reis & Housley (2022).](img/data_lifecycle_logos.png)
+![The data lifecycle and a more concrete overview of what **we will implement** in this project. Modified from "Fundamentals of Data Engineering" by Reis & Housley (2022).](img/data_lifecycle_logos.png){#fig-concrete-project-outline}
 
 First, we will fetch the data from the Socrata Open Data API (SODA) through HTTP. After that, we will generate some extra variables of our interest with Polars, to finally store it in a DuckDB database we will consume for analytics and predictive modeling. All this is orchestrated with Mage.
 
@@ -353,11 +353,14 @@ The primary goal of the `get_schema_from_metadata` block is to retrieve data typ
 
 Please notice that we use Polars for data transformation and manipulation. Compared with Pandas, Polars offers better performance and scalability, making it a more cost-effective choice for production systems. This [case study](https://pola.rs/posts/case-check-technology/) demonstrates that Polars can reduce computational costs, making it a good choice for projects that may eventually transition to production. Polars is a mature and robust library with extensive capabilities, making it an excellent choice for this project.
 
-With our first block created, we can explain how the Mage flow works. First... to finally pass the resulting data to the block downstream
+We can illustrate how the Mage flow operates using our first block. Initially, the block performs its main task—fetching data from an API in this example. The instructions for this task are defined in the block's primary function, which is identified by the `@data_loader` decorator. Once the main task is completed, its output is passed to the tests, marked with the `@test` decorator. If all tests are successful, the output is forwarded to the next block in the stream.
 
-[IMAGE]
+When you first looked at @fig-concrete-project-outline, you might have wondered why storage spans the entire process and why Apache Arrow and Parquet are included in the storage block alongside DuckDB. This is because data storage underpins every major stage, with data being stored multiple times throughout its life cycle. Mage uses PyArrow to handle data serialization and deserialization between blocks during these storage steps[^7]. For disk storage, PyArrow serializes the data into the Parquet format. For more details, you can check the the [documentation](https://docs.mage.ai/guides/blocks/polars).
+
+![Overview of Mage blocks functioning.](img/mage_blocks_function.png)
 
 [^6]: Little Mai and I 🐑.
+[^7]: This occurs when the returned object is a data frame (Polars or Pandas). In this concrete case, that won't happen since we're returning a dictionary, but in the following blocks, it will be the case since the objects transferred will be Polars data frames. With dictionaries, serialization will still occur but in a [JSON format](https://github.com/mage-ai/mage-ai/issues/4725).
 
 ```{python}
 #| label: check_local_db_1

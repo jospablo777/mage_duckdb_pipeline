@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="José P. Barrantes">
-<meta name="dcterms.date" content="2025-01-01">
+<meta name="dcterms.date" content="2025-01-02">
 <meta name="description" content="GitHub Repo: SODA to DuckDB">
 
 <title>Building a data pipeline with Mage, Polars, and DuckDB</title>
@@ -165,7 +165,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Last updated</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 1, 2025</p>
+      <p class="date">January 2, 2025</p>
     </div>
   </div>
   
@@ -200,10 +200,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="data-manipulation-and-storage">Data manipulation and storage</h3>
 <p>Why Polars and DuckDB? The answer lies in the size and nature of the dataset we’re working with. Since our dataset is small enough to fit in memory, we don’t need a distributed system like Spark. Polars, with its fast and memory-efficient operations, is perfect for data manipulation and transformation. Meanwhile, DuckDB provides a lightweight, yet powerful, SQL-based engine for persistent storage and querying. Together, these tools offer a simple, performant, and highly efficient solution for handling our data pipeline.</p>
 <p>Returning to the data lifecycle diagram, we can land it in a more concrete way to show how our project will be built and executed:</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="img/data_lifecycle_logos.png" class="img-fluid figure-img"></p>
-<figcaption>The data lifecycle and a more concrete overview of what <strong>we will implement</strong> in this project. Modified from “Fundamentals of Data Engineering” by Reis &amp; Housley (2022).</figcaption>
+<div id="fig-concrete-project-outline" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-concrete-project-outline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="img/data_lifecycle_logos.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-concrete-project-outline-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: The data lifecycle and a more concrete overview of what <strong>we will implement</strong> in this project. Modified from “Fundamentals of Data Engineering” by Reis &amp; Housley (2022).
+</figcaption>
 </figure>
 </div>
 <p>First, we will fetch the data from the Socrata Open Data API (SODA) through HTTP. After that, we will generate some extra variables of our interest with Polars, to finally store it in a DuckDB database we will consume for analytics and predictive modeling. All this is orchestrated with Mage.</p>
@@ -497,8 +501,14 @@ Note
 </div>
 <p>The primary goal of the <code>get_schema_from_metadata</code> block is to retrieve data type information to standardize batch ingestion. While Polars can infer data types based on the content they read, each batch may differ in structure. This inconsistency can lead to errors and prevent us from merging batches later. We can resolve this issue by specifying data types and ensuring a consistent schema across all batches.</p>
 <p>Please notice that we use Polars for data transformation and manipulation. Compared with Pandas, Polars offers better performance and scalability, making it a more cost-effective choice for production systems. This <a href="https://pola.rs/posts/case-check-technology/">case study</a> demonstrates that Polars can reduce computational costs, making it a good choice for projects that may eventually transition to production. Polars is a mature and robust library with extensive capabilities, making it an excellent choice for this project.</p>
-<p>With our first block created, we can explain how the Mage flow works. First… to finally pass the resulting data to the block downstream</p>
-<p>[IMAGE]</p>
+<p>We can illustrate how the Mage flow operates using our first block. Initially, the block performs its main task—fetching data from an API in this example. The instructions for this task are defined in the block’s primary function, which is identified by the <code>@data_loader</code> decorator. Once the main task is completed, its output is passed to the tests, marked with the <code>@test</code> decorator. If all tests are successful, the output is forwarded to the next block in the stream.</p>
+<p>When you first looked at <a href="#fig-concrete-project-outline" class="quarto-xref">Figure&nbsp;1</a>, you might have wondered why storage spans the entire process and why Apache Arrow and Parquet are included in the storage block alongside DuckDB. This is because data storage underpins every major stage, with data being stored multiple times throughout its life cycle. Mage uses PyArrow to handle data serialization and deserialization between blocks during these storage steps<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a>. For disk storage, PyArrow serializes the data into the Parquet format. For more details, you can check the the <a href="https://docs.mage.ai/guides/blocks/polars">documentation</a>.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/mage_blocks_function.png" class="img-fluid figure-img"></p>
+<figcaption>Overview of Mage blocks functioning.</figcaption>
+</figure>
+</div>
 <div class="cell">
 <div class="sourceCode cell-code" id="annotated-cell-7"><pre class="sourceCode python code-annotation-code code-with-copy"><code class="sourceCode python"><span id="annotated-cell-7-1"><a href="#annotated-cell-7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
 <span id="annotated-cell-7-2"><a href="#annotated-cell-7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> duckdb</span>
@@ -721,6 +731,7 @@ Note
 <li id="fn4"><p>I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn5"><p>The process will get frozen at some point with no notifications or feedback.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn6"><p>Little Mai and I 🐑.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7"><p>This occurs when the returned object is a data frame (Polars or Pandas). In this concrete case, that won’t happen since we’re returning a dictionary, but in the following blocks, it will be the case since the objects transferred will be Polars data frames. With dictionaries, serialization will still occur but in a <a href="https://github.com/mage-ai/mage-ai/issues/4725">JSON format</a>.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
