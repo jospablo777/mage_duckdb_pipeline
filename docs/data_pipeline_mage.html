@@ -646,10 +646,182 @@ Note
 </section>
 <section id="pulling-the-iowa-liquor-sales-data" class="level3">
 <h3 class="anchored" data-anchor-id="pulling-the-iowa-liquor-sales-data">Pulling the Iowa Liquor Sales data</h3>
-<p>With the metadata at hand now we will be able to get the data of interest (the sales data)</p>
-<p><code>get_schema_from_metadata</code></p>
-<p><code>soda_records_per_year</code></p>
-<p><code>check_local_db</code></p>
+<p>With the metadata in place, we can now retrieve the sales data of interest by creating the <code>pull_data_from_socrata</code> block. Once this loader block is created, connect the upstream blocks to it in the following order:</p>
+<ol type="1">
+<li><code>get_schema_from_metadata</code></li>
+<li><code>soda_records_per_year</code></li>
+<li><code>check_local_db</code></li>
+</ol>
+<p>You can make this configuration in the “Tree” panel to the right of your Mage code editor:</p>
+<p><img src="img/mage_code_editor_tree.png" class="img-fluid"></p>
+<p>The final configuration should look like this:</p>
+<p><img src="img/upstream_to_pull_data_from_socrata.png" class="img-fluid"></p>
+<p>This will ensure the parameter order remains consistent for you as well. While we know this block will utilize data from the three upstream blocks, how do we access this data in our code? The answer lies in the header of our new block, which contains all the information we need:</p>
+<p><img src="img/pull_data_from_socrata_header.png" class="img-fluid"></p>
+<p>In this header, we receive all the necessary information to consume the upstream data. It includes an example showing the parameter order and how they correspond to each upstream block. The loader function, identified by the <code>@data_loader</code> decorator, provides a clear structure.</p>
+<p>The parameter names (<code>data</code>, <code>data_2</code>, <code>data_3</code>) are arbitrary, allowing you to choose names that best suit your function. However, what matters most is the <strong>positional order</strong> of the parameters. Specifically:</p>
+<ul>
+<li>The first parameter corresponds to the output of <code>get_schema_from_metadata.</code></li>
+<li>The second parameter corresponds to <code>soda_records_per_year.</code></li>
+<li>The third parameter corresponds to <code>check_local_db.</code></li>
+</ul>
+<p>With this in mind, we can proceed to define the content of this block. Since there is a lot to cover, we’ll break it down into three sections: the imports, the loader function, and the tests. Let’s start with the dependencies for this block:</p>
+<p>Filename: <a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py"><code>data_loaders/pull_data_from_socrata.py</code></a></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-10"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-10-1"><a href="#annotated-cell-10-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> io</span>
+<span id="annotated-cell-10-2"><a href="#annotated-cell-10-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> polars <span class="im">as</span> pl</span>
+<span id="annotated-cell-10-3"><a href="#annotated-cell-10-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> requests</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="1" onclick="event.preventDefault();">1</a><span id="annotated-cell-10-4" class="code-annotation-target"><a href="#annotated-cell-10-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> math <span class="im">import</span> ceil</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="2" onclick="event.preventDefault();">2</a><span id="annotated-cell-10-5" class="code-annotation-target"><a href="#annotated-cell-10-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> concurrent.futures <span class="im">import</span> ThreadPoolExecutor, as_completed</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-10" data-target-annotation="3" onclick="event.preventDefault();">3</a><span id="annotated-cell-10-6" class="code-annotation-target"><a href="#annotated-cell-10-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> tqdm <span class="im">import</span> tqdm</span>
+<span id="annotated-cell-10-7"><a href="#annotated-cell-10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-10-8"><a href="#annotated-cell-10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-10" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-lines="4" data-code-annotation="1">Round numbers to the nearest ceiling.</span>
+</dd>
+<dt data-target-cell="annotated-cell-10" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-lines="5" data-code-annotation="2">We will implement a multithreading approach to speed up the data retrieval process.</span>
+</dd>
+<dt data-target-cell="annotated-cell-10" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-10" data-code-lines="6" data-code-annotation="3">A progress bar. Provides real-time feedback on the data-pulling progress, which besides of being helpful for the user, it’s also supportive for debugging purposes.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>There are some anotations to the imports, but now we will review the most complex part of our implementation, the loader function:</p>
+<p>Filename: <a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py"><code>data_loaders/pull_data_from_socrata.py</code></a></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-11"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-11-1"><a href="#annotated-cell-11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span>
+<span id="annotated-cell-11-2"><a href="#annotated-cell-11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-11-3"><a href="#annotated-cell-11-3" aria-hidden="true" tabindex="-1"></a><span class="at">@data_loader</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-11" data-target-annotation="1" onclick="event.preventDefault();">1</a><span id="annotated-cell-11-4" class="code-annotation-target"><a href="#annotated-cell-11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_data_from_api(schema,</span>
+<span id="annotated-cell-11-5"><a href="#annotated-cell-11-5" aria-hidden="true" tabindex="-1"></a>                       last_year_in_local_db,</span>
+<span id="annotated-cell-11-6"><a href="#annotated-cell-11-6" aria-hidden="true" tabindex="-1"></a>                       records_per_year,</span>
+<span id="annotated-cell-11-7"><a href="#annotated-cell-11-7" aria-hidden="true" tabindex="-1"></a>                       <span class="op">*</span>args, <span class="op">**</span>kwargs):</span>
+<span id="annotated-cell-11-8"><a href="#annotated-cell-11-8" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-11" data-target-annotation="2" onclick="event.preventDefault();">2</a><span id="annotated-cell-11-9" class="code-annotation-target"><a href="#annotated-cell-11-9" aria-hidden="true" tabindex="-1"></a>    DOMAIN     <span class="op">=</span> <span class="st">'data.iowa.gov'</span></span>
+<span id="annotated-cell-11-10"><a href="#annotated-cell-11-10" aria-hidden="true" tabindex="-1"></a>    DATASET_ID <span class="op">=</span> <span class="st">'m3tr-qhgy'</span></span>
+<span id="annotated-cell-11-11"><a href="#annotated-cell-11-11" aria-hidden="true" tabindex="-1"></a>    base_url   <span class="op">=</span> <span class="ss">f"https://</span><span class="sc">{</span>DOMAIN<span class="sc">}</span><span class="ss">/resource/</span><span class="sc">{</span>DATASET_ID<span class="sc">}</span><span class="ss">.csv?"</span></span>
+<span id="annotated-cell-11-12"><a href="#annotated-cell-11-12" aria-hidden="true" tabindex="-1"></a>    query_url  <span class="op">=</span> <span class="st">"$where=date_extract_y(date)=</span><span class="sc">{}</span><span class="st">&amp;$limit=</span><span class="sc">{}</span><span class="st">"</span></span>
+<span id="annotated-cell-11-13"><a href="#annotated-cell-11-13" aria-hidden="true" tabindex="-1"></a>    records_per_year <span class="op">=</span> records_per_year.with_columns(</span>
+<span id="annotated-cell-11-14"><a href="#annotated-cell-11-14" aria-hidden="true" tabindex="-1"></a>    pl.<span class="bu">format</span>(base_url <span class="op">+</span> query_url, pl.col(<span class="st">"year"</span>), pl.col(<span class="st">"rows"</span>)).alias(<span class="st">"url"</span>)</span>
+<span id="annotated-cell-11-15"><a href="#annotated-cell-11-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-11-16"><a href="#annotated-cell-11-16" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-11" data-target-annotation="3" onclick="event.preventDefault();">3</a><span id="annotated-cell-11-17" class="code-annotation-target"><a href="#annotated-cell-11-17" aria-hidden="true" tabindex="-1"></a>    records_per_year <span class="op">=</span> records_per_year.<span class="bu">filter</span>(pl.col(<span class="st">"year"</span>) <span class="op">&gt;=</span> last_year_in_local_db)</span>
+<span id="annotated-cell-11-18"><a href="#annotated-cell-11-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-11-19"><a href="#annotated-cell-11-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (last_year_in_local_db <span class="op">!=</span> records_per_year[<span class="st">"year"</span>].<span class="bu">max</span>()) <span class="op">&amp;</span> last_year_in_local_db <span class="op">!=</span> <span class="dv">0</span>:</span>
+<span id="annotated-cell-11-20"><a href="#annotated-cell-11-20" aria-hidden="true" tabindex="-1"></a>        <span class="co"># We're limiting to five years per job so our machine dont explode</span></span>
+<span id="annotated-cell-11-21"><a href="#annotated-cell-11-21" aria-hidden="true" tabindex="-1"></a>        records_per_year <span class="op">=</span> records_per_year.sort(<span class="st">"year"</span>).head(<span class="dv">6</span>)</span>
+<span id="annotated-cell-11-22"><a href="#annotated-cell-11-22" aria-hidden="true" tabindex="-1"></a>        records_per_year <span class="op">=</span> records_per_year.<span class="bu">filter</span>(pl.col(<span class="st">"year"</span>) <span class="op">!=</span> last_year_in_local_db)</span>
+<span id="annotated-cell-11-23"><a href="#annotated-cell-11-23" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="annotated-cell-11-24"><a href="#annotated-cell-11-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># We're limiting to five years per job so our machine dont explode</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-11" data-target-annotation="4" onclick="event.preventDefault();">4</a><span id="annotated-cell-11-25" class="code-annotation-target"><a href="#annotated-cell-11-25" aria-hidden="true" tabindex="-1"></a>    records_per_year <span class="op">=</span> records_per_year.sort(<span class="st">"year"</span>).head(<span class="dv">5</span>)</span>
+<span id="annotated-cell-11-26"><a href="#annotated-cell-11-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-11-27"><a href="#annotated-cell-11-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Years we will request to the API</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-11" data-target-annotation="5" onclick="event.preventDefault();">5</a><span id="annotated-cell-11-28" class="code-annotation-target"><a href="#annotated-cell-11-28" aria-hidden="true" tabindex="-1"></a>    requests_list <span class="op">=</span> records_per_year[<span class="st">"url"</span>].to_list()</span>
+<span id="annotated-cell-11-29"><a href="#annotated-cell-11-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-11-30"><a href="#annotated-cell-11-30" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"SODA data pull started."</span>)</span>
+<span id="annotated-cell-11-31"><a href="#annotated-cell-11-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-11-32"><a href="#annotated-cell-11-32" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Report to the user which years we will be working with</span></span>
+<span id="annotated-cell-11-33"><a href="#annotated-cell-11-33" aria-hidden="true" tabindex="-1"></a>    years_to_fetch <span class="op">=</span> records_per_year[<span class="st">"year"</span>].to_list()</span>
+<span id="annotated-cell-11-34"><a href="#annotated-cell-11-34" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Years to be fetched: </span><span class="sc">{}</span><span class="st">."</span>.<span class="bu">format</span>(<span class="st">", "</span>.join(<span class="bu">map</span>(<span class="bu">str</span>, years_to_fetch))))</span>
+<span id="annotated-cell-11-35"><a href="#annotated-cell-11-35" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="annotated-cell-11-36"><a href="#annotated-cell-11-36" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-11" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-11" data-code-lines="4,5,6" data-code-annotation="1">aa</span>
+</dd>
+<dt data-target-cell="annotated-cell-11" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-11" data-code-lines="9,15" data-code-annotation="2">aa</span>
+</dd>
+<dt data-target-cell="annotated-cell-11" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-11" data-code-lines="17,22" data-code-annotation="3">aa</span>
+</dd>
+<dt data-target-cell="annotated-cell-11" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-11" data-code-lines="25" data-code-annotation="4">aa</span>
+</dd>
+<dt data-target-cell="annotated-cell-11" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-11" data-code-lines="28" data-code-annotation="5">aa</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>Concurrent fetch</p>
+<p>Filename: <a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py"><code>data_loaders/pull_data_from_socrata.py</code></a></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-12"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-12-1"><a href="#annotated-cell-12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span>
+<span id="annotated-cell-12-2"><a href="#annotated-cell-12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-12-3"><a href="#annotated-cell-12-3" aria-hidden="true" tabindex="-1"></a><span class="at">@data_loader</span></span>
+<span id="annotated-cell-12-4"><a href="#annotated-cell-12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_data_from_api(schema,</span>
+<span id="annotated-cell-12-5"><a href="#annotated-cell-12-5" aria-hidden="true" tabindex="-1"></a>                       last_year_in_local_db,</span>
+<span id="annotated-cell-12-6"><a href="#annotated-cell-12-6" aria-hidden="true" tabindex="-1"></a>                       records_per_year,</span>
+<span id="annotated-cell-12-7"><a href="#annotated-cell-12-7" aria-hidden="true" tabindex="-1"></a>                       <span class="op">*</span>args, <span class="op">**</span>kwargs):</span>
+<span id="annotated-cell-12-8"><a href="#annotated-cell-12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-12-9"><a href="#annotated-cell-12-9" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span>
+<span id="annotated-cell-12-10"><a href="#annotated-cell-12-10" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="1" onclick="event.preventDefault();">1</a><span id="annotated-cell-12-11" class="code-annotation-target"><a href="#annotated-cell-12-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> fetch_batch(data_url):</span>
+<span id="annotated-cell-12-12"><a href="#annotated-cell-12-12" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Fetch data for a given URL."""</span></span>
+<span id="annotated-cell-12-13"><a href="#annotated-cell-12-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">try</span>:</span>
+<span id="annotated-cell-12-14"><a href="#annotated-cell-12-14" aria-hidden="true" tabindex="-1"></a>            response <span class="op">=</span> requests.get(data_url)</span>
+<span id="annotated-cell-12-15"><a href="#annotated-cell-12-15" aria-hidden="true" tabindex="-1"></a>            response.raise_for_status()  <span class="co"># Raise an error for bad responses</span></span>
+<span id="annotated-cell-12-16"><a href="#annotated-cell-12-16" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> pl.read_csv(io.StringIO(response.text), schema <span class="op">=</span> schema)</span>
+<span id="annotated-cell-12-17"><a href="#annotated-cell-12-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="annotated-cell-12-18"><a href="#annotated-cell-12-18" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"Error fetching data from </span><span class="sc">{</span>data_url<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="annotated-cell-12-19"><a href="#annotated-cell-12-19" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> pl.DataFrame(schema <span class="op">=</span> schema)</span>
+<span id="annotated-cell-12-20"><a href="#annotated-cell-12-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-12-21"><a href="#annotated-cell-12-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Use ThreadPoolExecutor for concurrent API calls</span></span>
+<span id="annotated-cell-12-22"><a href="#annotated-cell-12-22" aria-hidden="true" tabindex="-1"></a>    df_list <span class="op">=</span> []</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="2" onclick="event.preventDefault();">2</a><span id="annotated-cell-12-23" class="code-annotation-target"><a href="#annotated-cell-12-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> ThreadPoolExecutor(max_workers <span class="op">=</span> <span class="dv">3</span>) <span class="im">as</span> executor:</span>
+<span id="annotated-cell-12-24"><a href="#annotated-cell-12-24" aria-hidden="true" tabindex="-1"></a>        </span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="3" onclick="event.preventDefault();">3</a><span id="annotated-cell-12-25" class="code-annotation-target"><a href="#annotated-cell-12-25" aria-hidden="true" tabindex="-1"></a>        futures <span class="op">=</span> {executor.submit(fetch_batch, url): url <span class="cf">for</span> url <span class="kw">in</span> requests_list}</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="4" onclick="event.preventDefault();">4</a><span id="annotated-cell-12-26" class="code-annotation-target"><a href="#annotated-cell-12-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> future <span class="kw">in</span> tqdm(as_completed(futures), total<span class="op">=</span><span class="bu">len</span>(futures), desc<span class="op">=</span><span class="st">"Fetching data"</span>):</span>
+<span id="annotated-cell-12-27"><a href="#annotated-cell-12-27" aria-hidden="true" tabindex="-1"></a>            url <span class="op">=</span> futures[future]</span>
+<span id="annotated-cell-12-28"><a href="#annotated-cell-12-28" aria-hidden="true" tabindex="-1"></a>            <span class="cf">try</span>:</span>
+<span id="annotated-cell-12-29"><a href="#annotated-cell-12-29" aria-hidden="true" tabindex="-1"></a>                data <span class="op">=</span> future.result()</span>
+<span id="annotated-cell-12-30"><a href="#annotated-cell-12-30" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> <span class="kw">not</span> data.is_empty():</span>
+<span id="annotated-cell-12-31"><a href="#annotated-cell-12-31" aria-hidden="true" tabindex="-1"></a>                    df_list.append(data)</span>
+<span id="annotated-cell-12-32"><a href="#annotated-cell-12-32" aria-hidden="true" tabindex="-1"></a>            <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
+<span id="annotated-cell-12-33"><a href="#annotated-cell-12-33" aria-hidden="true" tabindex="-1"></a>                <span class="bu">print</span>(<span class="ss">f"Error processing URL </span><span class="sc">{</span>url<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="annotated-cell-12-34"><a href="#annotated-cell-12-34" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="5" onclick="event.preventDefault();">5</a><span id="annotated-cell-12-35" class="code-annotation-target"><a href="#annotated-cell-12-35" aria-hidden="true" tabindex="-1"></a>    all_pulled_data <span class="op">=</span> pl.concat(df_list, how<span class="op">=</span><span class="st">"vertical"</span>)</span>
+<span id="annotated-cell-12-36"><a href="#annotated-cell-12-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-12-37"><a href="#annotated-cell-12-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> all_pulled_data</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-12" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-12" data-code-lines="11,19" data-code-annotation="1">aa</span>
+</dd>
+<dt data-target-cell="annotated-cell-12" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-12" data-code-lines="23" data-code-annotation="2">aa</span>
+</dd>
+<dt data-target-cell="annotated-cell-12" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-12" data-code-lines="25" data-code-annotation="3">aa</span>
+</dd>
+<dt data-target-cell="annotated-cell-12" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-12" data-code-lines="26" data-code-annotation="4">aa</span>
+</dd>
+<dt data-target-cell="annotated-cell-12" data-target-annotation="5">5</dt>
+<dd>
+<span data-code-cell="annotated-cell-12" data-code-lines="35" data-code-annotation="5">aa</span>
+</dd>
+</dl>
+</div>
+</div>
 <p>Bash execution</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">user@user-pc:~/mage_duckdb_pipeline$</span> mage run . socrata_iowa_liquor_pipeline</span>

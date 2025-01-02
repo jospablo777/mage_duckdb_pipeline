@@ -487,15 +487,158 @@ With that, we've completed the first layer of Mage blocks. The next step downstr
 
 ### Pulling the Iowa Liquor Sales data
 
-With the metadata at hand now we will be able to get the data of interest (the sales data)
+With the metadata in place, we can now retrieve the sales data of interest by creating the `pull_data_from_socrata` block. Once this loader block is created, connect the upstream blocks to it in the following order:
+
+1. `get_schema_from_metadata`
+2. `soda_records_per_year`
+3. `check_local_db`
+
+You can make this configuration in the "Tree" panel to the right of your Mage code editor:
+
+![](img/mage_code_editor_tree.png)
+
+The final configuration should look like this:
+
+![](img/upstream_to_pull_data_from_socrata.png)
+
+This will ensure the parameter order remains consistent for you as well. While we know this block will utilize data from the three upstream blocks, how do we access this data in our code? The answer lies in the header of our new block, which contains all the information we need:
+
+![](img/pull_data_from_socrata_header.png)
+
+In this header, we receive all the necessary information to consume the upstream data. It includes an example showing the parameter order and how they correspond to each upstream block. The loader function, identified by the `@data_loader` decorator, provides a clear structure.
+
+The parameter names (`data`, `data_2`, `data_3`) are arbitrary, allowing you to choose names that best suit your function. However, what matters most is the **positional order** of the parameters. Specifically:
+
+- The first parameter corresponds to the output of `get_schema_from_metadata.`
+- The second parameter corresponds to `soda_records_per_year.`
+- The third parameter corresponds to `check_local_db.`
+
+With this in mind, we can proceed to define the content of this block. Since there is a lot to cover, we’ll break it down into three sections: the imports, the loader function, and the tests. Let’s start with the dependencies for this block:
+
+Filename: [`data_loaders/pull_data_from_socrata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py)
+```{python}
+#| label: pull_data_from_socrata_imports
+#| include: true
+#| eval: false
+
+import io
+import polars as pl
+import requests
+from math import ceil # <1>
+from concurrent.futures import ThreadPoolExecutor, as_completed # <2>
+from tqdm import tqdm # <3>
+
+# -- snip --
+
+```
+1. Round numbers to the nearest ceiling.
+2. We will implement a multithreading approach to speed up the data retrieval process.
+3. A progress bar. Provides real-time feedback on the data-pulling progress, which besides of being helpful for the user, it's also supportive for debugging purposes.
+
+There are some anotations to the imports, but now we will review the most complex part of our implementation, the loader function:
+
+Filename: [`data_loaders/pull_data_from_socrata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py)
+```{python}
+#| label: pull_data_from_socrata_loader_1
+#| include: true
+#| eval: false
+
+# -- snip --
+
+@data_loader
+def load_data_from_api(schema, # <1>
+                       last_year_in_local_db, # <1>
+                       records_per_year,  # <1>
+                       *args, **kwargs):
+
+    DOMAIN     = 'data.iowa.gov' # <2>
+    DATASET_ID = 'm3tr-qhgy'
+    base_url   = f"https://{DOMAIN}/resource/{DATASET_ID}.csv?"
+    query_url  = "$where=date_extract_y(date)={}&$limit={}"
+    records_per_year = records_per_year.with_columns(
+    pl.format(base_url + query_url, pl.col("year"), pl.col("rows")).alias("url")
+    ) # <2>
+
+    records_per_year = records_per_year.filter(pl.col("year") >= last_year_in_local_db) # <3>
+
+    if (last_year_in_local_db != records_per_year["year"].max()) & last_year_in_local_db != 0:
+        # We're limiting to five years per job so our machine dont explode
+        records_per_year = records_per_year.sort("year").head(6)
+        records_per_year = records_per_year.filter(pl.col("year") != last_year_in_local_db) # <3> 
+    
+    # We're limiting to five years per job so our machine dont explode
+    records_per_year = records_per_year.sort("year").head(5) # <4>
+
+    # Years we will request to the API
+    requests_list = records_per_year["url"].to_list() # <5>
+
+    print("SODA data pull started.")
+
+    # Report to the user which years we will be working with
+    years_to_fetch = records_per_year["year"].to_list()
+    print("Years to be fetched: {}.".format(", ".join(map(str, years_to_fetch))))
+    
+# -- snip --
+```
+1. aa
+2. aa
+3. aa 
+4. aa
+5. aa
 
 
+Concurrent fetch
 
-`get_schema_from_metadata`
+Filename: [`data_loaders/pull_data_from_socrata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py)
+```{python}
+#| label: pull_data_from_socrata_loader_2
+#| include: true
+#| eval: false
 
-`soda_records_per_year`
+# -- snip --
 
-`check_local_db`
+@data_loader
+def load_data_from_api(schema,
+                       last_year_in_local_db,
+                       records_per_year,
+                       *args, **kwargs):
+
+# -- snip --
+
+    def fetch_batch(data_url): # <1>
+        """Fetch data for a given URL."""
+        try:
+            response = requests.get(data_url)
+            response.raise_for_status()  # Raise an error for bad responses
+            return pl.read_csv(io.StringIO(response.text), schema = schema)
+        except Exception as e:
+            print(f"Error fetching data from {data_url}: {e}")
+            return pl.DataFrame(schema = schema)  # <1> 
+
+    # Use ThreadPoolExecutor for concurrent API calls
+    df_list = []
+    with ThreadPoolExecutor(max_workers = 3) as executor: # <2> 
+        
+        futures = {executor.submit(fetch_batch, url): url for url in requests_list} # <3> 
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching data"): # <4> 
+            url = futures[future]
+            try:
+                data = future.result()
+                if not data.is_empty():
+                    df_list.append(data)
+            except Exception as e:
+                print(f"Error processing URL {url}: {e}")
+
+    all_pulled_data = pl.concat(df_list, how="vertical") # <5> 
+
+    return all_pulled_data # <6> 
+```
+1. aa
+2. aa
+3. aa 
+4. aa
+5. aa
+
 
 Bash execution
 
