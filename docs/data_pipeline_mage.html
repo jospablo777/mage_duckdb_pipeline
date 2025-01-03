@@ -131,7 +131,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#soda-api-our-data-source" id="toc-soda-api-our-data-source" class="nav-link" data-scroll-target="#soda-api-our-data-source">SODA API: our data source</a></li>
   <li><a href="#fetching-the-data" id="toc-fetching-the-data" class="nav-link" data-scroll-target="#fetching-the-data">Fetching the data</a>
   <ul class="collapse">
-  <li><a href="#wrinting-our-first-mage-blocks" id="toc-wrinting-our-first-mage-blocks" class="nav-link" data-scroll-target="#wrinting-our-first-mage-blocks">Wrinting our first Mage blocks</a></li>
+  <li><a href="#writing-our-first-mage-blocks" id="toc-writing-our-first-mage-blocks" class="nav-link" data-scroll-target="#writing-our-first-mage-blocks">Writing our first Mage blocks</a></li>
   <li><a href="#pulling-the-iowa-liquor-sales-data" id="toc-pulling-the-iowa-liquor-sales-data" class="nav-link" data-scroll-target="#pulling-the-iowa-liquor-sales-data">Pulling the Iowa Liquor Sales data</a></li>
   </ul></li>
   <li><a href="#about-the-polar-bear-in-the-header" id="toc-about-the-polar-bear-in-the-header" class="nav-link" data-scroll-target="#about-the-polar-bear-in-the-header">About the polar bear in the header</a></li>
@@ -178,6 +178,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p><img src="img/under_construction.png" class="img-fluid"></p>
 <p><img src="img/bonjour_bear.png" class="img-fluid"></p>
 <section id="where-are-we-in-the-data-lifecycle" class="level2">
 <h2 class="anchored" data-anchor-id="where-are-we-in-the-data-lifecycle">Where are we in the data lifecycle?</h2>
@@ -356,8 +357,8 @@ Note
 <p>In this tutorial, we will adopt the writing style of <a href="https://doc.rust-lang.org/book/"><em>The Rust Programming Language</em></a> book, where the file path is shown before each code block. This approach allows you to easily follow the project’s structure. The complete code for the project is available on the <a href="https://github.com/jospablo777/mage_duckdb_pipeline">GitHub repo</a>. Also, the function docstrings have been removed from this article. However, you can review the complete technical documentation of each function by checking the files in the repo.</p>
 </div>
 </div>
-<section id="wrinting-our-first-mage-blocks" class="level3">
-<h3 class="anchored" data-anchor-id="wrinting-our-first-mage-blocks">Wrinting our first Mage blocks</h3>
+<section id="writing-our-first-mage-blocks" class="level3">
+<h3 class="anchored" data-anchor-id="writing-our-first-mage-blocks">Writing our first Mage blocks</h3>
 <p>Here we will implement our first block, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to our already created pipeline, <code>socrata_iowa_liquor_pipeline</code>. But if you want to follow this tutorial from scratch, you can also create a new pipeline, for example, <code>socrata_iowa_liquor_pipeline_from_scratch</code>, and continue working from there. With the intuitive Mage UI, it will be easy for you to create this new pipeline.</p>
 <p>Our first block:</p>
 <div class="quarto-figure quarto-figure-center">

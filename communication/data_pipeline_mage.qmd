@@ -33,6 +33,8 @@ library(ggplot2)
 Sys.setenv(RETICULATE_PYTHON = "../venv/bin/python")
 ```
 
+![](img/under_construction.png)
+
 ![](img/bonjour_bear.png)
 
 ## Where are we in the data lifecycle?
@@ -239,7 +241,7 @@ With this in mind, we can return to Mage. We'll begin by creating the first thre
 In this tutorial, we will adopt the writing style of [*The Rust Programming Language*](https://doc.rust-lang.org/book/) book, where the file path is shown before each code block. This approach allows you to easily follow the project's structure. The complete code for the project is available on the [GitHub repo](https://github.com/jospablo777/mage_duckdb_pipeline). Also, the function docstrings have been removed from this article. However, you can review the complete technical documentation of each function by checking the files in the repo.
 :::
 
-### Wrinting our first Mage blocks
+### Writing our first Mage blocks
 
 Here we will implement our first block, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to our already created pipeline, `socrata_iowa_liquor_pipeline`. But if you want to follow this tutorial from scratch, you can also create a new pipeline, for example, `socrata_iowa_liquor_pipeline_from_scratch`, and continue working from there. With the intuitive Mage UI, it will be easy for you to create this new pipeline.
 
