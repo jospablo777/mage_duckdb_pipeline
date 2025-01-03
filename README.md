@@ -15,9 +15,9 @@ You can revisit this [in-depth tutorial/article](https://jospablo777.github.io/m
 
 ## Tools and Technologies
 
-- **[Mage](https://www.mage.ai/)**: a modern, open-source data orchestration tool.
-- **[Polars](https://www.pola.rs/)**: a high-performance DataFrame library for efficient data manipulation in Python.
-- **[DuckDB](https://duckdb.org/)**: a fast, in-process SQL OLAP database engine.
+- **[Mage](https://www.mage.ai/)**: orchestrates data pipelines for efficient and automated workflows.
+- **[Polars](https://www.pola.rs/)**: accelerates data manipulation with its high-performance DataFrame capabilities.
+- **[DuckDB](https://duckdb.org/)**: empowers SQL-based OLAP analysis directly on your local machine.
 
 ---
 
