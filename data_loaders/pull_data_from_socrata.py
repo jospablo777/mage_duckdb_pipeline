@@ -13,8 +13,8 @@ if 'test' not in globals():
 
 @data_loader
 def load_data_from_api(schema, 
-                       last_year_in_local_db, 
                        records_per_year, 
+                       last_year_in_local_db, 
                        *args, **kwargs):
     """
     Pulls the data from the SODA data set endpoint and reads it into a Polars data frame concurrently.

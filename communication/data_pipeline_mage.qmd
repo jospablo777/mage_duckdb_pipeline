@@ -9,6 +9,9 @@ author:
 description: "GitHub Repo: [SODA to DuckDB](https://github.com/jospablo777/)"
 date: "`r Sys.Date()`"
 published-title: "Last updated"
+crossref:
+  fig-title: "Named figure"
+  fig-prefix: "Named figure"
 format: 
   html:
     toc: true
@@ -359,7 +362,7 @@ When you first looked at @fig-concrete-project-outline, you might have wondered 
 
 Below is an overview of how Mage blocks function:
 
-![Overview of Mage blocks functioning.](img/mage_blocks_function.png)
+![Overview of Mage blocks functioning.](img/mage_blocks_function.png){#fig-mage-blocks-working}
 
 Congrats! You just implemented your first Mage block. Let's test it, you can do this with the "play" icon in the header of the block:
 
@@ -483,9 +486,7 @@ This block is designed to monitor the local database, enabling efficient updates
 
 With that, we've completed the first layer of Mage blocks. The next step downstream involves retrieving the data of interest. In this stage, we will use the outputs of the three blocks we just created
 
-[^6]: Little Mai and I 🐑.
-[^7]: This occurs when the returned object is a data frame (Polars or Pandas). In this concrete case, that won't happen since we're returning a dictionary, but in the following blocks, it will be the case since the objects transferred will be Polars data frames. With dictionaries, serialization will still occur but in [JSON format](https://github.com/mage-ai/mage-ai/issues/4725).
-[^8]: We can also use `.pl()` to cast the results into a Polars data frame or `.df()` for a Pandas one.
+
 
 ### Pulling the Iowa Liquor Sales data
 
@@ -548,9 +549,9 @@ Filename: [`data_loaders/pull_data_from_socrata.py`](https://github.com/jospablo
 # -- snip --
 
 @data_loader
-def load_data_from_api(schema, # <1>
+def load_data_from_api(schema,                # <1>
+                       records_per_year,      # <1>
                        last_year_in_local_db, # <1>
-                       records_per_year,  # <1>
                        *args, **kwargs):
 
     DOMAIN     = 'data.iowa.gov' # <2>
@@ -642,9 +643,67 @@ def load_data_from_api(schema,
 6. All data frames are merged into a single one.
 7. Finally, the merged data frame containing all the requested data is returned.
 
-In summary, this function utilizes `ThreadPoolExecutor` to submit API requests for all the URLs in `requests_list`. Tasks are executed in parallel based on the number of workers specified. Progress is monitored using `tqdm,` which updates the progress bar in real-time. The result (a Polars data frame) is retrieved and validated for each completed task. Once all tasks are complete, the individual data frames are merged into a single data frame, which is then returned. The process is illustrated in the following chart.
+So, this function utilizes `ThreadPoolExecutor` to submit API requests for all the URLs in `requests_list`. Tasks are executed in parallel based on the number of workers specified. Progress is monitored using `tqdm,` which updates the progress bar in real-time. The result (a Polars data frame) is retrieved and validated for each completed task. Once all tasks are complete, the individual data frames are merged into a single data frame, which is then returned. The process is illustrated in the following chart.
 
 ![Asynchronous data fetching](img/asynchronous_fetch.png)
+
+### Testing
+
+With the main functionality complete, ensuring that the loader runs reliably is essential, even when the code requires adjustments[^9]. To achieve this, we write tests to verify its behavior. Additionally, to maintain the best data quality in our pipeline, these tests also focus on ensuring the integrity and consistency of the data.
+
+Let's review the final part of our block, which consists of three tests. These tests are designed to validate certain expectations of the data, such as ensuring no null values in specific columns, and to verify the overall integrity of the data.
+
+Filename: [`data_loaders/pull_data_from_socrata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py)
+```{python}
+#| label: pull_data_from_socrata_tests
+#| include: true
+#| eval: false
+
+# -- snip --
+
+@test # <1>
+def test_output(output, *args) -> None:
+    """
+    Validates the output of data pulling block.
+    """
+    assert output is not None, 'The output is undefined'
+    assert isinstance(output, pl.DataFrame), "The output is not a a Polars data frame"
+    assert len(output) > 0, "The data frame is empty" # <1>
+
+@test # <2>
+def test_invoice_line_no_not_null_output(output, *args) -> None:
+    """
+    Test the new invoice_line_no column contains no nulls.
+    """
+    assert output["invoice_line_no"].is_null().sum() == 0, "The invoice_line_no column contain null values, it shouldn't" # <2>
+
+@test # <3>
+def test_date_not_null_output(output, *args) -> None:
+    """
+    Test the new date column contains no nulls.
+    """
+    assert output["date"].is_null().sum() == 0, "The date column contain null values, it shouldn't" # <3>
+```
+1. Verify that the output is a non-empty Polars data frame containing valid content.
+2. Ensure that the `invoice_line_no` column contains no null values.
+3. Confirm that the `date` column contains no null values.
+
+When writing tests for your blocks, always include the `@test` decorator. This informs Mage to treat the functions as tests. In these examples, we verified the basic integrity of the resulting data frame and enforced specific rules for two columns. If everything went smoothly, you should see a confirmation message for each test that passed after running the block.
+
+![](img/ingestion_done_data_lifecycle_logos.png)
+
+And we just finished implementing the data ingestion part of our pipeline! :D
+
+## Transform the data
+
+With the retrieved data in hand, we now focus on transforming it. As illustrated in @fig-mage-blocks-working, after fetching the data and running the tests, the block serializes the data to pass it downstream. The next step is to implement these downstream blocks to transform the data and generate new variables.
+
+The dataset offers a wealth of information, including product descriptions and geolocation points, providing ample opportunities for deeper insights and analysis. To enhance this further, we will create new variables that reveal additional business insights, enabling us to answer more interesting questions. We’ve organized the transformations into the following business-logic blocks:
+
+1. `product_transformations`: generates general product descriptions, such as liquor type or packaging size.
+2. `sales_and_price_related_metrics`: creates variables like profits and costs.
+3. `volume_based_features`: develops features related to the liquid volume of sales.
+4. `time_based_features`: generates temporal variables for time-based analysis.
 
 Bash execution
 
@@ -678,23 +737,10 @@ conn2 <- DBI::dbConnect(
 )
 ```
 
-```{sql}
-#| label: example_query
-#| output.var: query2
-#| echo: true
-#| output: true
-#| connection: conn2
-
-SELECT *
-FROM iowa_liquor_sales
-LIMIT 10
-```
-```{r}
-tibble::tibble(query2)
-```
 
 ```{python}
 #| label: python_conn
+#| eval: false
 import duckdb
 
 con_py = duckdb.connect("../data/iowa_liquor.duckdb", read_only=True)
@@ -704,6 +750,7 @@ polars_df = con_py.sql("SELECT liquor_type, bottle_size, price_per_liter FROM io
 polars_df
 ```
 ```{python}
+#| eval: false
 polars_df.height
 ```
 
@@ -714,3 +761,8 @@ https://knowyourmeme.com/memes/bonjour-bear
 ## Cited works and recommended readings
 
 - Reis, J., & Housley, M. (2022). *Fundamentals of data engineering: Plan and build robust data systems*. O'Reilly Media.
+
+[^6]: Little Mai and I 🐑.
+[^7]: This occurs when the returned object is a data frame (Polars or Pandas). In this concrete case, that won't happen since we're returning a dictionary, but in the following blocks, it will be the case since the objects transferred will be Polars data frames. With dictionaries, serialization will still occur but in [JSON format](https://github.com/mage-ai/mage-ai/issues/4725).
+[^8]: We can also use `.pl()` to cast the results into a Polars data frame or `.df()` for a Pandas one.
+[^9]: For instance, I should move the `fetch_batch` function outside the `load_data_from_api` loader. Defining functions within other functions is generally considered a bad practice, as it can make the code harder to read, test, and maintain.
