@@ -705,6 +705,8 @@ The dataset offers a wealth of information, including product descriptions and g
 3. `volume_based_features`: develops features related to the liquid volume of sales.
 4. `time_based_features`: generates temporal variables for time-based analysis.
 
+Most of the code in these blocks will be Polars transformations. If you are famili
+
 Bash execution
 
 ```{bash}
