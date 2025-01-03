@@ -693,7 +693,7 @@ Note
 </dl>
 </div>
 </div>
-<p>There are some anotations to the imports, but now we will review the most complex part of our implementation, the loader function:</p>
+<p>Nothing weird in the imports. Now, let’s review the most complex part of our implementation, the loader function:</p>
 <p>Filename: <a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py"><code>data_loaders/pull_data_from_socrata.py</code></a></p>
 <div class="cell">
 <div class="sourceCode cell-code" id="annotated-cell-11"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-11-1"><a href="#annotated-cell-11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span>
@@ -736,28 +736,28 @@ Note
 <dl class="code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-11" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-11" data-code-lines="4,5,6" data-code-annotation="1">aa</span>
+<span data-code-cell="annotated-cell-11" data-code-lines="4,5,6" data-code-annotation="1"><strong>Parameter order:</strong> remember, the order of the parameters matters, but you can name them however you like.</span>
 </dd>
 <dt data-target-cell="annotated-cell-11" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-11" data-code-lines="9,15" data-code-annotation="2">aa</span>
+<span data-code-cell="annotated-cell-11" data-code-lines="9,15" data-code-annotation="2"><strong>Customizing API requests:</strong> The <code>records_per_year</code> data frame is used to construct the URLs for API requests. It customizes the SoQL query for each year, with a unique <code>$limit</code> value tailored to the data volume for that year.</span>
 </dd>
 <dt data-target-cell="annotated-cell-11" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-11" data-code-lines="17,22" data-code-annotation="3">aa</span>
+<span data-code-cell="annotated-cell-11" data-code-lines="17,22" data-code-annotation="3"><strong>Excluding existing data:</strong> an additional filter ensures that years already present in the local database are excluded from the requests.</span>
 </dd>
 <dt data-target-cell="annotated-cell-11" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-11" data-code-lines="25" data-code-annotation="4">aa</span>
+<span data-code-cell="annotated-cell-11" data-code-lines="25" data-code-annotation="4"><strong>Data pull limit:</strong> to prevent overloading your machine, we limit data pulls to a maximum of five years per run. Adjust this limit based on your system’s capacity.</span>
 </dd>
 <dt data-target-cell="annotated-cell-11" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-cell="annotated-cell-11" data-code-lines="28" data-code-annotation="5">aa</span>
+<span data-code-cell="annotated-cell-11" data-code-lines="28" data-code-annotation="5"><strong>URL list:</strong> after filtering, the formatted URLs are collected into a list, which will be used later for parallel data fetching.</span>
 </dd>
 </dl>
 </div>
 </div>
-<p>Concurrent fetch</p>
+<p>Up to this point, the process has been straightforward. We simply used some upstream data (<code>records_per_year</code>) to format the URLs needed for API requests, applying a few Polars transformations for text formatting. Lets continue reviewing the concurrent fetch of the data.</p>
 <p>Filename: <a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py"><code>data_loaders/pull_data_from_socrata.py</code></a></p>
 <div class="cell">
 <div class="sourceCode cell-code" id="annotated-cell-12"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-12-1"><a href="#annotated-cell-12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span>
@@ -788,39 +788,54 @@ Note
 <a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="4" onclick="event.preventDefault();">4</a><span id="annotated-cell-12-26" class="code-annotation-target"><a href="#annotated-cell-12-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> future <span class="kw">in</span> tqdm(as_completed(futures), total<span class="op">=</span><span class="bu">len</span>(futures), desc<span class="op">=</span><span class="st">"Fetching data"</span>):</span>
 <span id="annotated-cell-12-27"><a href="#annotated-cell-12-27" aria-hidden="true" tabindex="-1"></a>            url <span class="op">=</span> futures[future]</span>
 <span id="annotated-cell-12-28"><a href="#annotated-cell-12-28" aria-hidden="true" tabindex="-1"></a>            <span class="cf">try</span>:</span>
-<span id="annotated-cell-12-29"><a href="#annotated-cell-12-29" aria-hidden="true" tabindex="-1"></a>                data <span class="op">=</span> future.result()</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="5" onclick="event.preventDefault();">5</a><span id="annotated-cell-12-29" class="code-annotation-target"><a href="#annotated-cell-12-29" aria-hidden="true" tabindex="-1"></a>                data <span class="op">=</span> future.result()</span>
 <span id="annotated-cell-12-30"><a href="#annotated-cell-12-30" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> <span class="kw">not</span> data.is_empty():</span>
 <span id="annotated-cell-12-31"><a href="#annotated-cell-12-31" aria-hidden="true" tabindex="-1"></a>                    df_list.append(data)</span>
 <span id="annotated-cell-12-32"><a href="#annotated-cell-12-32" aria-hidden="true" tabindex="-1"></a>            <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> e:</span>
 <span id="annotated-cell-12-33"><a href="#annotated-cell-12-33" aria-hidden="true" tabindex="-1"></a>                <span class="bu">print</span>(<span class="ss">f"Error processing URL </span><span class="sc">{</span>url<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>e<span class="sc">}</span><span class="ss">"</span>)</span>
 <span id="annotated-cell-12-34"><a href="#annotated-cell-12-34" aria-hidden="true" tabindex="-1"></a></span>
-<a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="5" onclick="event.preventDefault();">5</a><span id="annotated-cell-12-35" class="code-annotation-target"><a href="#annotated-cell-12-35" aria-hidden="true" tabindex="-1"></a>    all_pulled_data <span class="op">=</span> pl.concat(df_list, how<span class="op">=</span><span class="st">"vertical"</span>)</span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="6" onclick="event.preventDefault();">6</a><span id="annotated-cell-12-35" class="code-annotation-target"><a href="#annotated-cell-12-35" aria-hidden="true" tabindex="-1"></a>    all_pulled_data <span class="op">=</span> pl.concat(df_list, how<span class="op">=</span><span class="st">"vertical"</span>)</span>
 <span id="annotated-cell-12-36"><a href="#annotated-cell-12-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="annotated-cell-12-37"><a href="#annotated-cell-12-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> all_pulled_data</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-12" data-target-annotation="7" onclick="event.preventDefault();">7</a><span id="annotated-cell-12-37" class="code-annotation-target"><a href="#annotated-cell-12-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> all_pulled_data</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-annotation">
 <dl class="code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-12" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-12" data-code-lines="11,19" data-code-annotation="1">aa</span>
+<span data-code-cell="annotated-cell-12" data-code-lines="11,19" data-code-annotation="1">First we have to define a function that will handle the requests. It receives an URL, makes the GET request, and returns a Polars data frame with the data. In case there is an error in our request, it also handles that.</span>
 </dd>
 <dt data-target-cell="annotated-cell-12" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-12" data-code-lines="23" data-code-annotation="2">aa</span>
+<span data-code-cell="annotated-cell-12" data-code-lines="23" data-code-annotation="2">Initializes a thread pool with a maximum of three workers (<code>max_workers = 3</code>), allowing up to three API requests to be executed concurrently. This will help to speed up the data retrieval. The <code>with</code> statement is used for context management, ensuring the thread pool is properly shut down once all threads have completed their work.</span>
 </dd>
 <dt data-target-cell="annotated-cell-12" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-12" data-code-lines="25" data-code-annotation="3">aa</span>
+<span data-code-cell="annotated-cell-12" data-code-lines="25" data-code-annotation="3">Here were we submit tasks to the thread pool. A dictionary is created using comprehension. The <code>executor.submit(...)</code> method schedules the <code>fetch_batch</code> function to run in a separate thread with <code>url</code> as its argument, returning a <code>Future</code> object. The resulting <code>futures</code> dictionary maps these Future objects to their corresponding URLs.</span>
 </dd>
 <dt data-target-cell="annotated-cell-12" data-target-annotation="4">4</dt>
 <dd>
-<span data-code-cell="annotated-cell-12" data-code-lines="26" data-code-annotation="4">aa</span>
+<span data-code-cell="annotated-cell-12" data-code-lines="26" data-code-annotation="4">To monitor progress, the code iterates over the <code>Future</code> objects as they complete (using <code>as_completed</code>) and tracks progress with <code>tqdm</code>, providing real-time feedback to the user.</span>
 </dd>
 <dt data-target-cell="annotated-cell-12" data-target-annotation="5">5</dt>
 <dd>
-<span data-code-cell="annotated-cell-12" data-code-lines="35" data-code-annotation="5">aa</span>
+<span data-code-cell="annotated-cell-12" data-code-lines="29" data-code-annotation="5">Retrieves the results, for each completed task, <code>future.result()</code> is called to retrieve the result of the <code>fetch_batch</code> function. This method waits for the task to finish and returns the resulting Polars data frame.</span>
+</dd>
+<dt data-target-cell="annotated-cell-12" data-target-annotation="6">6</dt>
+<dd>
+<span data-code-cell="annotated-cell-12" data-code-lines="35" data-code-annotation="6">All data frames are merged into a single one.</span>
+</dd>
+<dt data-target-cell="annotated-cell-12" data-target-annotation="7">7</dt>
+<dd>
+<span data-code-cell="annotated-cell-12" data-code-lines="37" data-code-annotation="7">Finally, the merged data frame containing all the requested data is returned.</span>
 </dd>
 </dl>
 </div>
+</div>
+<p>In summary, this function utilizes <code>ThreadPoolExecutor</code> to submit API requests for all the URLs in <code>requests_list</code>. Tasks are executed in parallel based on the number of workers specified. Progress is monitored using <code>tqdm,</code> which updates the progress bar in real-time. The result (a Polars data frame) is retrieved and validated for each completed task. Once all tasks are complete, the individual data frames are merged into a single data frame, which is then returned. The process is illustrated in the following chart.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/asynchronous_fetch.png" class="img-fluid figure-img"></p>
+<figcaption>Asynchronous data fetching</figcaption>
+</figure>
 </div>
 <p>Bash execution</p>
 <div class="cell">

@@ -513,7 +513,7 @@ The parameter names (`data`, `data_2`, `data_3`) are arbitrary, allowing you to 
 - The second parameter corresponds to `soda_records_per_year.`
 - The third parameter corresponds to `check_local_db.`
 
-With this in mind, we can proceed to define the content of this block. Since there is a lot to cover, we’ll break it down into three sections: the imports, the loader function, and the tests. Let’s start with the dependencies for this block:
+With this in mind, we can proceed to define the content of this block. Since there is a lot to cover, we'll break it down into three sections: the imports, the loader function, and the tests. Let's start with the dependencies for this block:
 
 Filename: [`data_loaders/pull_data_from_socrata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py)
 ```{python}
@@ -535,7 +535,7 @@ from tqdm import tqdm # <3>
 2. We will implement a multithreading approach to speed up the data retrieval process.
 3. A progress bar. Provides real-time feedback on the data-pulling progress, which besides of being helpful for the user, it's also supportive for debugging purposes.
 
-There are some anotations to the imports, but now we will review the most complex part of our implementation, the loader function:
+Nothing weird in the imports. Now, let's review the most complex part of our implementation, the loader function:
 
 Filename: [`data_loaders/pull_data_from_socrata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py)
 ```{python}
@@ -580,14 +580,13 @@ def load_data_from_api(schema, # <1>
     
 # -- snip --
 ```
-1. aa
-2. aa
-3. aa 
-4. aa
-5. aa
+1. **Parameter order:**  remember, the order of the parameters matters, but you can name them however you like.
+2. **Customizing API requests:** The `records_per_year` data frame is used to construct the URLs for API requests. It customizes the SoQL query for each year, with a unique `$limit` value tailored to the data volume for that year.
+3.  **Excluding existing data:** an additional filter ensures that years already present in the local database are excluded from the requests.
+4. **Data pull limit:** to prevent overloading your machine, we limit data pulls to a maximum of five years per run. Adjust this limit based on your system's capacity.
+5. **URL list:** after filtering, the formatted URLs are collected into a list, which will be used later for parallel data fetching.
 
-
-Concurrent fetch
+Up to this point, the process has been straightforward. We simply used some upstream data (`records_per_year`) to format the URLs needed for API requests, applying a few Polars transformations for text formatting. Lets continue reviewing the concurrent fetch of the data.
 
 Filename: [`data_loaders/pull_data_from_socrata.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_loaders/pull_data_from_socrata.py)
 ```{python}
@@ -623,22 +622,27 @@ def load_data_from_api(schema,
         for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching data"): # <4> 
             url = futures[future]
             try:
-                data = future.result()
+                data = future.result() # <5>
                 if not data.is_empty():
                     df_list.append(data)
             except Exception as e:
                 print(f"Error processing URL {url}: {e}")
 
-    all_pulled_data = pl.concat(df_list, how="vertical") # <5> 
+    all_pulled_data = pl.concat(df_list, how="vertical") # <6> 
 
-    return all_pulled_data # <6> 
+    return all_pulled_data # <7> 
 ```
-1. aa
-2. aa
-3. aa 
-4. aa
-5. aa
+1. First we have to define a function that will handle the requests. It receives an URL, makes the GET request, and returns a Polars data frame with the data. In case there is an error in our request, it also handles that.
+2. Initializes a thread pool with a maximum of three workers (`max_workers = 3`), allowing up to three API requests to be executed concurrently. This will help to speed up the data retrieval. The `with` statement is used for context management, ensuring the thread pool is properly shut down once all threads have completed their work.
+3. Here were we submit tasks to the thread pool. A dictionary is created using comprehension. The `executor.submit(...)` method schedules the `fetch_batch` function to run in a separate thread with `url` as its argument, returning a `Future` object. The resulting `futures` dictionary maps these Future objects to their corresponding URLs.
+4. To monitor progress, the code iterates over the `Future` objects as they complete (using `as_completed`) and tracks progress with `tqdm`, providing real-time feedback to the user.
+5. Retrieves the results, for each completed task, `future.result()` is called to retrieve the result of the `fetch_batch` function. This method waits for the task to finish and returns the resulting Polars data frame.
+6. All data frames are merged into a single one.
+7. Finally, the merged data frame containing all the requested data is returned.
 
+In summary, this function utilizes `ThreadPoolExecutor` to submit API requests for all the URLs in `requests_list`. Tasks are executed in parallel based on the number of workers specified. Progress is monitored using `tqdm,` which updates the progress bar in real-time. The result (a Polars data frame) is retrieved and validated for each completed task. Once all tasks are complete, the individual data frames are merged into a single data frame, which is then returned. The process is illustrated in the following chart.
+
+![Asynchronous data fetching](img/asynchronous_fetch.png)
 
 Bash execution
 
