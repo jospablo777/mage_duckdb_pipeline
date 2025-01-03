@@ -1,11 +1,14 @@
-# SODA to DuckDB: building a data pipeline for high-performance analytics
+# SODA to DuckDB: building a data pipeline for high-performance analytics with modern tools
 
-This project demonstrates how to build an efficient data pipeline to move data from the **Socrata Open Data API (SODA)** to a local **DuckDB** database. The goal is to create a lightweight, high-performance data repository optimized for running analytical queries.
+
+This project demonstrates how to build an efficient data pipeline to move data from the **Socrata Open Data API (SODA)** to a local **DuckDB** database. The goal is to create a lightweight, high-performance data repository optimized for running analytical queries on your local machine. Ideal for data analysts and engineers seeking efficient, lightweight solutions for managing and analyzing large datasets locally.
+
+You can revisit this [in-depth tutorial/article](https://jospablo777.github.io/mage_duckdb_pipeline/data_pipeline_mage.html) to build and understand this system.
 
 ## Key Features
 
-- **Data Ingestion**: rethrieve a dataset from the SODA API.
-- **High-Performance Analytics**: use DuckDB, a columnar database, to enable aggressive querying for analytics.
+- **Data Ingestion**: retrieve datasets effortlessly from the SODA API for efficient local analytics.
+- **High-Performance Analytics**: leverage the power of DuckDB to enable high-speed querying and seamless analytics.
 - **Modern Tooling**: utilize open-source tools like Mage, Polars, and DuckDB to streamline the ETL process.
 
 ---
@@ -86,13 +89,15 @@ To start the Mage UI, run in the terminal (in the project's folder):
 mage start
 ```
 
+Use the Mage UI to visually manage and monitor your pipeline activities
+
 ## Citation
 
 No need to cite, but it would mean a lot if you did! 😃 Feel free to use this code and project structure in your personal or work projects—make it yours!
 
 ## Contact
 
-Let's keep in touch!
+Have questions, suggestions, or just want to connect? Feel free to reach out!
 
 - LinkedIn: [José Pablo Barrantes](https://www.linkedin.com/in/jose-barrantes/)
 - BlueSky: [doggofan77.bsky.social](https://bsky.app/profile/doggofan77.bsky.social)
