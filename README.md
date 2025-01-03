@@ -3,7 +3,7 @@
 
 This project demonstrates how to build an efficient data pipeline to move data from the **Socrata Open Data API (SODA)** to a local **DuckDB** database. The goal is to create a lightweight, high-performance data repository optimized for running analytical queries on your local machine. Ideal for data analysts and engineers seeking efficient, lightweight solutions for managing and analyzing large datasets locally.
 
-You can revisit this [in-depth tutorial/article](https://jospablo777.github.io/mage_duckdb_pipeline/data_pipeline_mage.html) to build and understand this system.
+You can revisit this in-depth [tutorial/article](https://jospablo777.github.io/mage_duckdb_pipeline/data_pipeline_mage.html) to build and understand this system.
 
 ## Key Features
 
