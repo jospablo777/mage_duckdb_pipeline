@@ -78,8 +78,6 @@ First, we will fetch the data from the Socrata Open Data API (SODA) through HTTP
 
 We've chosen the [Iowa Liquor Sales](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) dataset since it is big enough to make this ETL (extract, transform, load) pipeline interesting.
 
-[^1]: According to their web page :)
-
 
 ## Our problem
 
@@ -124,8 +122,6 @@ At this point, you know you are on your own to optimize this process[^3]. And yo
 
 This brings us to our current challenge: finding a more agile and efficient way to make the SODA liquor sales data accessible to the rest of the company.
 
-[^2]: There is no budget for a "scientist," and at this point in history, there is no such thing as a "data engineer" in [Latin America]{style="text-decoration: line-through;"} Iowa.
-[^3]: Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we're loving it 🪇🐑).
 
 ## Solution implementation: getting started
 
@@ -217,9 +213,6 @@ Now, we have a clearer understanding of the upper stage in our stream, the data 
 ![Progress we've made so far.](img/soda_done_data_lifecycle_logos.png)
 
 With this in mind, we can now move on to the ingestion step.
-
-[^4]: I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.
-[^5]: The process will get frozen at some point with no notifications or feedback.
 
 
 ## Fetching the data
@@ -707,7 +700,66 @@ The dataset offers a wealth of information, including product descriptions and g
 3. `volume_based_features`: develops features related to the liquid volume of sales.
 4. `time_based_features`: generates temporal variables for time-based analysis.
 
-Most of the code in these blocks will be Polars transformations. If you are famili
+Most of the code in these blocks will be Polars transformations. If you are familiar with PySpark you will find that the syntax is similar, no worries if this is your first time with Polars, let's review what the code does. 
+
+Filename: [`transformers/product_transformations.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/product_transformations.py)
+```{python}
+#| label: product_transformations_transformer
+#| include: true
+#| eval: false
+
+# -- snip --
+
+@transformer
+def transform(data, *args, **kwargs):
+    data = data.with_columns(
+        # Categorize liquors
+        pl.when(pl.col("category_name").str.contains("VODK")).then("Vodka") # <1>
+        .when(pl.col("category_name").str.contains("WHISK")).then("Whisky")
+        .when(pl.col("category_name").str.contains("RUM")).then("Rum")
+        .when(pl.col("category_name").str.contains("SCHN")).then("Schnapps")
+        .when(pl.col("category_name").str.contains("TEQ")).then("Tequila")
+        .when(
+            pl.col("category_name").str.contains("BRANDIE")
+            | pl.col("category_name").str.contains("BRANDY")
+            ).then("Brandy")
+        .when(pl.col("category_name").str.contains("GIN")).then("Gin")
+        .when(pl.col("category_name").str.contains("MEZC")).then("Mezcal")
+        .when(
+            pl.col("category_name").str.contains("CREM")
+            | pl.col("category_name").str.contains("CREAM")
+            ).then("Cream")
+        .otherwise("Other")
+        .alias("liquor_type"), # <1>
+        # Is premium
+        (pl.col("state_bottle_retail") >= 30).alias("is_premium"), # <2>
+        # Bottle size category
+        pl.when(pl.col("bottle_volume_ml") < 500).then("small") # <3>
+        .when((pl.col("bottle_volume_ml") >= 500) & (pl.col("bottle_volume_ml") < 1000)).then("medium")
+        .otherwise("large")
+        .alias("bottle_size") # <3>
+        )
+
+    print("Product-related new variables, generated.")
+    return data
+
+# -- snip --
+```
+1. Categorize the liquor type (Tequila, Whisky, etc.)
+2. Define if we consider the product premium based on the price of the individual product.
+3. Categorize the produc by size.
+
+Here `data` represents the upstream data frame that the block `pull_data_from_socrata` passed to this one, see that it is the first parameter of the `transform` transformer. Then we go to the polars transformation part modifying the `with_column` method, which is used to add or replace columns.
+
+Within `with_columns` we will proceed with the transformations
+
+Filename: [`transformers/product_transformations.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/product_transformations.py)
+```{python}
+#| label: product_transformations_tests
+#| include: true
+#| eval: false
+
+```
 
 Bash execution
 
@@ -766,6 +818,11 @@ https://knowyourmeme.com/memes/bonjour-bear
 
 - Reis, J., & Housley, M. (2022). *Fundamentals of data engineering: Plan and build robust data systems*. O'Reilly Media.
 
+[^1]: According to their web page :)
+[^2]: There is no budget for a "scientist," and at this point in history, there is no such thing as a "data engineer" in [Latin America]{style="text-decoration: line-through;"} Iowa.
+[^3]: Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we're loving it 🪇🐑).
+[^4]: I spent a few days debugging this and initially signaled Mage as the culprit, but in the end, the SODA API was responsible.
+[^5]: The process will get frozen at some point with no notifications or feedback.
 [^6]: Little Mai and I 🐑.
 [^7]: This occurs when the returned object is a data frame (Polars or Pandas). In this concrete case, that won't happen since we're returning a dictionary, but in the following blocks, it will be the case since the objects transferred will be Polars data frames. With dictionaries, serialization will still occur but in [JSON format](https://github.com/mage-ai/mage-ai/issues/4725).
 [^8]: We can also use `.pl()` to cast the results into a Polars data frame or `.df()` for a Pandas one.

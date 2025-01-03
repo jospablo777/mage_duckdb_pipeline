@@ -908,7 +908,65 @@ Named figure&nbsp;2: Overview of Mage blocks functioning.
 <li><code>volume_based_features</code>: develops features related to the liquid volume of sales.</li>
 <li><code>time_based_features</code>: generates temporal variables for time-based analysis.</li>
 </ol>
-<p>Most of the code in these blocks will be Polars transformations. If you are famili</p>
+<p>Most of the code in these blocks will be Polars transformations. If you are familiar with PySpark you will find that the syntax is similar, no worries if this is your first time with Polars, let’s review what the code does.</p>
+<p>Filename: <a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/product_transformations.py"><code>transformers/product_transformations.py</code></a></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-14"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-14-1"><a href="#annotated-cell-14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span>
+<span id="annotated-cell-14-2"><a href="#annotated-cell-14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-14-3"><a href="#annotated-cell-14-3" aria-hidden="true" tabindex="-1"></a><span class="at">@transformer</span></span>
+<span id="annotated-cell-14-4"><a href="#annotated-cell-14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> transform(data, <span class="op">*</span>args, <span class="op">**</span>kwargs):</span>
+<span id="annotated-cell-14-5"><a href="#annotated-cell-14-5" aria-hidden="true" tabindex="-1"></a>    data <span class="op">=</span> data.with_columns(</span>
+<span id="annotated-cell-14-6"><a href="#annotated-cell-14-6" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Categorize liquors</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-14" data-target-annotation="1" onclick="event.preventDefault();">1</a><span id="annotated-cell-14-7" class="code-annotation-target"><a href="#annotated-cell-14-7" aria-hidden="true" tabindex="-1"></a>        pl.when(pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"VODK"</span>)).then(<span class="st">"Vodka"</span>)</span>
+<span id="annotated-cell-14-8"><a href="#annotated-cell-14-8" aria-hidden="true" tabindex="-1"></a>        .when(pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"WHISK"</span>)).then(<span class="st">"Whisky"</span>)</span>
+<span id="annotated-cell-14-9"><a href="#annotated-cell-14-9" aria-hidden="true" tabindex="-1"></a>        .when(pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"RUM"</span>)).then(<span class="st">"Rum"</span>)</span>
+<span id="annotated-cell-14-10"><a href="#annotated-cell-14-10" aria-hidden="true" tabindex="-1"></a>        .when(pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"SCHN"</span>)).then(<span class="st">"Schnapps"</span>)</span>
+<span id="annotated-cell-14-11"><a href="#annotated-cell-14-11" aria-hidden="true" tabindex="-1"></a>        .when(pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"TEQ"</span>)).then(<span class="st">"Tequila"</span>)</span>
+<span id="annotated-cell-14-12"><a href="#annotated-cell-14-12" aria-hidden="true" tabindex="-1"></a>        .when(</span>
+<span id="annotated-cell-14-13"><a href="#annotated-cell-14-13" aria-hidden="true" tabindex="-1"></a>            pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"BRANDIE"</span>)</span>
+<span id="annotated-cell-14-14"><a href="#annotated-cell-14-14" aria-hidden="true" tabindex="-1"></a>            <span class="op">|</span> pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"BRANDY"</span>)</span>
+<span id="annotated-cell-14-15"><a href="#annotated-cell-14-15" aria-hidden="true" tabindex="-1"></a>            ).then(<span class="st">"Brandy"</span>)</span>
+<span id="annotated-cell-14-16"><a href="#annotated-cell-14-16" aria-hidden="true" tabindex="-1"></a>        .when(pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"GIN"</span>)).then(<span class="st">"Gin"</span>)</span>
+<span id="annotated-cell-14-17"><a href="#annotated-cell-14-17" aria-hidden="true" tabindex="-1"></a>        .when(pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"MEZC"</span>)).then(<span class="st">"Mezcal"</span>)</span>
+<span id="annotated-cell-14-18"><a href="#annotated-cell-14-18" aria-hidden="true" tabindex="-1"></a>        .when(</span>
+<span id="annotated-cell-14-19"><a href="#annotated-cell-14-19" aria-hidden="true" tabindex="-1"></a>            pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"CREM"</span>)</span>
+<span id="annotated-cell-14-20"><a href="#annotated-cell-14-20" aria-hidden="true" tabindex="-1"></a>            <span class="op">|</span> pl.col(<span class="st">"category_name"</span>).<span class="bu">str</span>.contains(<span class="st">"CREAM"</span>)</span>
+<span id="annotated-cell-14-21"><a href="#annotated-cell-14-21" aria-hidden="true" tabindex="-1"></a>            ).then(<span class="st">"Cream"</span>)</span>
+<span id="annotated-cell-14-22"><a href="#annotated-cell-14-22" aria-hidden="true" tabindex="-1"></a>        .otherwise(<span class="st">"Other"</span>)</span>
+<span id="annotated-cell-14-23"><a href="#annotated-cell-14-23" aria-hidden="true" tabindex="-1"></a>        .alias(<span class="st">"liquor_type"</span>),</span>
+<span id="annotated-cell-14-24"><a href="#annotated-cell-14-24" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Is premium</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-14" data-target-annotation="2" onclick="event.preventDefault();">2</a><span id="annotated-cell-14-25" class="code-annotation-target"><a href="#annotated-cell-14-25" aria-hidden="true" tabindex="-1"></a>        (pl.col(<span class="st">"state_bottle_retail"</span>) <span class="op">&gt;=</span> <span class="dv">30</span>).alias(<span class="st">"is_premium"</span>),</span>
+<span id="annotated-cell-14-26"><a href="#annotated-cell-14-26" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Bottle size category</span></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-14" data-target-annotation="3" onclick="event.preventDefault();">3</a><span id="annotated-cell-14-27" class="code-annotation-target"><a href="#annotated-cell-14-27" aria-hidden="true" tabindex="-1"></a>        pl.when(pl.col(<span class="st">"bottle_volume_ml"</span>) <span class="op">&lt;</span> <span class="dv">500</span>).then(<span class="st">"small"</span>)</span>
+<span id="annotated-cell-14-28"><a href="#annotated-cell-14-28" aria-hidden="true" tabindex="-1"></a>        .when((pl.col(<span class="st">"bottle_volume_ml"</span>) <span class="op">&gt;=</span> <span class="dv">500</span>) <span class="op">&amp;</span> (pl.col(<span class="st">"bottle_volume_ml"</span>) <span class="op">&lt;</span> <span class="dv">1000</span>)).then(<span class="st">"medium"</span>)</span>
+<span id="annotated-cell-14-29"><a href="#annotated-cell-14-29" aria-hidden="true" tabindex="-1"></a>        .otherwise(<span class="st">"large"</span>)</span>
+<span id="annotated-cell-14-30"><a href="#annotated-cell-14-30" aria-hidden="true" tabindex="-1"></a>        .alias(<span class="st">"bottle_size"</span>)</span>
+<span id="annotated-cell-14-31"><a href="#annotated-cell-14-31" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="annotated-cell-14-32"><a href="#annotated-cell-14-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-14-33"><a href="#annotated-cell-14-33" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"Product-related new variables, generated."</span>)</span>
+<span id="annotated-cell-14-34"><a href="#annotated-cell-14-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> data</span>
+<span id="annotated-cell-14-35"><a href="#annotated-cell-14-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-14-36"><a href="#annotated-cell-14-36" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-14" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-14" data-code-lines="7,23" data-code-annotation="1">Categorize the liquor type (Tequila, Whisky, etc.)</span>
+</dd>
+<dt data-target-cell="annotated-cell-14" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-14" data-code-lines="25" data-code-annotation="2">Define if we consider the product premium based on the price of the individual product.</span>
+</dd>
+<dt data-target-cell="annotated-cell-14" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-14" data-code-lines="27,30" data-code-annotation="3">Categorize the produc by size.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>Here <code>data</code> represents the upstream data frame that the block <code>pull_data_from_socrata</code> passed to this one, see that it is the first parameter of the <code>transform</code> transformer. Then we go to the polars transformation part modifying the <code>with_column</code> method, which is used to add or replace columns.</p>
+<p>Within <code>with_columns</code> we will proceed with the transformations</p>
+<p>Filename: <a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/product_transformations.py"><code>transformers/product_transformations.py</code></a></p>
 <p>Bash execution</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">user@user-pc:~/mage_duckdb_pipeline$</span> mage run . socrata_iowa_liquor_pipeline</span>
