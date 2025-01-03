@@ -38,6 +38,8 @@ Sys.setenv(RETICULATE_PYTHON = "../venv/bin/python")
 
 ![](img/under_construction.png)
 
+[**WARNING:** Please take into account that some expressions won't make sense, the doc is unorganized, and plagued of typos. I published this early since it is easier for me to edit the repo and the article this way :)]{style="color:#ff0000;"}
+
 ![](img/bonjour_bear.png)
 
 ## Where are we in the data lifecycle?
