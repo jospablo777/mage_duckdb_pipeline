@@ -693,12 +693,16 @@ And we just finished implementing the data ingestion part of our pipeline! :D
 
 With the retrieved data in hand, we now focus on transforming it. As illustrated in @fig-mage-blocks-working, after fetching the data and running the tests, the block serializes the data to pass it downstream. The next step is to implement these downstream blocks to transform the data and generate new variables.
 
+### Have present the bussiness logic
+
 The dataset offers a wealth of information, including product descriptions and geolocation points, providing ample opportunities for deeper insights and analysis. To enhance this further, we will create new variables that reveal additional business insights, enabling us to answer more interesting questions. We’ve organized the transformations into the following business-logic blocks:
 
 1. `product_transformations`: generates general product descriptions, such as liquor type or packaging size.
 2. `sales_and_price_related_metrics`: creates variables like profits and costs.
 3. `volume_based_features`: develops features related to the liquid volume of sales.
 4. `time_based_features`: generates temporal variables for time-based analysis.
+
+### Let's transform our data
 
 Most of the code in these blocks will be Polars transformations. If you are familiar with PySpark you will find that the syntax is similar, no worries if this is your first time with Polars, let's review what the code does. 
 
@@ -745,13 +749,23 @@ def transform(data, *args, **kwargs):
 
 # -- snip --
 ```
-1. Categorize the liquor type (Tequila, Whisky, etc.)
-2. Define if we consider the product premium based on the price of the individual product.
-3. Categorize the produc by size.
+1. Categorize the liquor type (Tequila, Whisky, etc.).
+2. Determine whether the product is considered premium based on its individual price.
+3. Classify the product by size.
 
-Here `data` represents the upstream data frame that the block `pull_data_from_socrata` passed to this one, see that it is the first parameter of the `transform` transformer. Then we go to the polars transformation part modifying the `with_column` method, which is used to add or replace columns.
+In this context, `data` represents the upstream `DataFrame` passed to this block by `pull_data_from_socrata`. It is the first parameter of the `transform` transformer. The Polars transformation begins with the `with_columns` method, which is used to add or replace columns in the DataFrame.
 
-Within `with_columns` we will proceed with the transformations
+Within `with_columns`, we define the transformations. To create the first new variable, we use the `pl.when()` function to start a conditional statement. To reference a column, we use the `pl.col()` function. If you are familiar with Pandas or `dplyr`, this might feel counterintuitive at first, but it works in a similar fashion—just pass the column name as a string, e.g., `pl.col("your_col")`.
+
+Once the column is selected, we apply the `.str.contains()` method to check if the string in a cell contains a specified pattern. If the pattern matches, the value specified in `.then()` will be used. We can chain additional `.when()` statements for more conditions, and the default value, used when no condition is met, is specified with `.otherwise("Other")`. To name the new column, we use `.alias("liquor_type")`. If the name matches an existing column, it will overwrite that column.
+
+This transformation leverages chained operations, a powerful feature in Polars. Most Polars methods return a `DataFrame`, allowing you to immediately chain additional methods. This enhances code readability and makes debugging easier. Note that after the `.alias()` method, there is a comma `,` instead of a dot `.`, indicating the end of the chain.
+
+Next, we proceed with premium and size categorizations in a similar manner. 
+
+### Test, test, test!
+
+Once the new variables are created, we will write tests for the outputs to ensure a baseline level of quality for the new data.
 
 Filename: [`transformers/product_transformations.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/product_transformations.py)
 ```{python}
@@ -759,7 +773,55 @@ Filename: [`transformers/product_transformations.py`](https://github.com/jospabl
 #| include: true
 #| eval: false
 
+# -- snip --
+
+@test # <1>
+def test_output(output, *args) -> None:
+    assert output is not None, 'The output is undefined' # <1>
+
+@test # <2>
+def test_liquor_type_col(output, *args) -> None:
+    assert output.get_column("liquor_type") is not None, 'The column liquor_type is undefined'
+    assert output.get_column("liquor_type").dtype is pl.Utf8, "The new variable type doesn't match" # <2>
+
+@test # <3>
+def test_is_premium_col(output, *args) -> None:
+    assert output.get_column("is_premium") is not None, 'The column is_premium is undefined'
+    assert output.get_column("is_premium").dtype is pl.Boolean, "The new variable type doesn't match" # <3>
+
+@test # <4>
+def test_bottle_size_col(output, *args) -> None:
+    assert output.get_column("bottle_size") is not None, 'The column bottle_size is undefined'
+    assert output.get_column("bottle_size").dtype is pl.Utf8, "The new variable type doesn't match" # <4>
+
 ```
+1. Validate the overall output for correctness.
+2. Verify the `liquor_type` column's content and data type.
+3. Check the `is_premium` column's content and data type.
+4. Ensure the `bottle_size` column's content and data type are correct.
+
+Notice that each new variable has at least one associated test. While more detailed tests can be added later, these initial ones will suffice for now. And that’s essentially how a transformation block is structured. The next three transformation blocks follow a similar pattern, so I won’t explain them in detail, but feel free to review them as needed.
+
+- [`sales_and_price_related_metrics`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/sales_and_price_related_metrics.py)
+- [`volume_based_features`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/volume_based_features.py)
+- [`time_based_features`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/time_based_features.py)
+
+That concludes our data transformation step! Next, we’ll move on to storing our valuable data.
+
+![](img/transformation_done_data_lifecycle_logos.png)
+
+## Storage
+
+With a robust method for retrieving and transforming our data, the next step is to store and query it efficiently. For this purpose, we’ll use DuckDB. But why choose DuckDB?
+
+DuckDB is well-known for its in-memory data manipulation capabilities, but it also supports persistent storage with several compelling advantages. By using DuckDB's native storage format, we gain the following benefits:
+
+- [**Free and open source:**](https://duckdb.org/why_duckdb.html) DuckDB is free and open-source, aligning with our preference for accessible and transparent tools[^10].
+- [**Lightweight compression:**](https://duckdb.org/2022/10/28/lightweight-compression.html) it employs advanced compression techniques to reduce storage space while maintaining efficiency.
+- [**Columnar vectorized query execution:**](https://vldb.org/pvldb/vol11/p2209-kersten.pdf) DuckDB processes data in chunks (vectors) rather than row-by-row, making efficient use of CPU and memory. This design is optimized for modern hardware architectures. For a comprehensive explanation, see Kersten et al. (2018).
+- [**Compact file structure:**](https://duckdb.org/docs/archive/1.0/internals/storage.html) DuckDB stores data in a compact, self-contained binary file, making it portable and easy to manage.
+- [**Comprehensible resources:**](https://www.manning.com/books/duckdb-in-action) besides excellent documentation, DuckDB has a fantastic community that makes it easy to use this database system. You can get a free "DuckDB in Action" copy on the [MotherDuck](https://motherduck.com/duckdb-book-brief/) webpage[^11].
+
 
 Bash execution
 
@@ -816,6 +878,7 @@ https://knowyourmeme.com/memes/bonjour-bear
 
 ## Cited works and recommended readings
 
+- Kersten, T., Leis, V., Kemper, A., Neumann, T., Pavlo, A., & Boncz, P. (2018). Everything you always wanted to know about compiled and vectorized queries but were afraid to ask. *Proceedings of the VLDB Endowment*, 11(13), 2209-2222. [https://doi.org/10.14778/3275366.3275370](https://doi.org/10.14778/3275366.3275370)
 - Reis, J., & Housley, M. (2022). *Fundamentals of data engineering: Plan and build robust data systems*. O'Reilly Media.
 
 [^1]: According to their web page :)
@@ -827,3 +890,5 @@ https://knowyourmeme.com/memes/bonjour-bear
 [^7]: This occurs when the returned object is a data frame (Polars or Pandas). In this concrete case, that won't happen since we're returning a dictionary, but in the following blocks, it will be the case since the objects transferred will be Polars data frames. With dictionaries, serialization will still occur but in [JSON format](https://github.com/mage-ai/mage-ai/issues/4725).
 [^8]: We can also use `.pl()` to cast the results into a Polars data frame or `.df()` for a Pandas one.
 [^9]: For instance, I should move the `fetch_batch` function outside the `load_data_from_api` loader. Defining functions within other functions is generally considered a bad practice, as it can make the code harder to read, test, and maintain.
+[^10]: Repeat after me: "We love open source."
+[^11]: We've found Manning a reliable editorial for technical books. Most of the time, their materials have high-quality content that is easy to digest. Highly recommended 👌

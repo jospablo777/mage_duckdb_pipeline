@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="José P. Barrantes">
-<meta name="dcterms.date" content="2025-01-03">
+<meta name="dcterms.date" content="2025-01-04">
 <meta name="description" content="GitHub Repo: SODA to DuckDB">
 
 <title>Building a data pipeline with Mage, Polars, and DuckDB</title>
@@ -135,7 +135,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#pulling-the-iowa-liquor-sales-data" id="toc-pulling-the-iowa-liquor-sales-data" class="nav-link" data-scroll-target="#pulling-the-iowa-liquor-sales-data">Pulling the Iowa Liquor Sales data</a></li>
   <li><a href="#testing" id="toc-testing" class="nav-link" data-scroll-target="#testing">Testing</a></li>
   </ul></li>
-  <li><a href="#transform-the-data" id="toc-transform-the-data" class="nav-link" data-scroll-target="#transform-the-data">Transform the data</a></li>
+  <li><a href="#transform-the-data" id="toc-transform-the-data" class="nav-link" data-scroll-target="#transform-the-data">Transform the data</a>
+  <ul class="collapse">
+  <li><a href="#have-present-the-bussiness-logic" id="toc-have-present-the-bussiness-logic" class="nav-link" data-scroll-target="#have-present-the-bussiness-logic">Have present the bussiness logic</a></li>
+  <li><a href="#lets-transform-our-data" id="toc-lets-transform-our-data" class="nav-link" data-scroll-target="#lets-transform-our-data">Let’s transform our data</a></li>
+  <li><a href="#test-test-test" id="toc-test-test-test" class="nav-link" data-scroll-target="#test-test-test">Test, test, test!</a></li>
+  </ul></li>
+  <li><a href="#storage" id="toc-storage" class="nav-link" data-scroll-target="#storage">Storage</a></li>
   <li><a href="#about-the-polar-bear-in-the-header" id="toc-about-the-polar-bear-in-the-header" class="nav-link" data-scroll-target="#about-the-polar-bear-in-the-header">About the polar bear in the header</a></li>
   <li><a href="#cited-works-and-recommended-readings" id="toc-cited-works-and-recommended-readings" class="nav-link" data-scroll-target="#cited-works-and-recommended-readings">Cited works and recommended readings</a></li>
   </ul>
@@ -168,7 +174,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Last updated</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 3, 2025</p>
+      <p class="date">January 4, 2025</p>
     </div>
   </div>
   
@@ -901,6 +907,8 @@ Named figure&nbsp;2: Overview of Mage blocks functioning.
 <section id="transform-the-data" class="level2">
 <h2 class="anchored" data-anchor-id="transform-the-data">Transform the data</h2>
 <p>With the retrieved data in hand, we now focus on transforming it. As illustrated in <a href="#fig-mage-blocks-working" class="quarto-xref">Named figure&nbsp;2</a>, after fetching the data and running the tests, the block serializes the data to pass it downstream. The next step is to implement these downstream blocks to transform the data and generate new variables.</p>
+<section id="have-present-the-bussiness-logic" class="level3">
+<h3 class="anchored" data-anchor-id="have-present-the-bussiness-logic">Have present the bussiness logic</h3>
 <p>The dataset offers a wealth of information, including product descriptions and geolocation points, providing ample opportunities for deeper insights and analysis. To enhance this further, we will create new variables that reveal additional business insights, enabling us to answer more interesting questions. We’ve organized the transformations into the following business-logic blocks:</p>
 <ol type="1">
 <li><code>product_transformations</code>: generates general product descriptions, such as liquor type or packaging size.</li>
@@ -908,6 +916,9 @@ Named figure&nbsp;2: Overview of Mage blocks functioning.
 <li><code>volume_based_features</code>: develops features related to the liquid volume of sales.</li>
 <li><code>time_based_features</code>: generates temporal variables for time-based analysis.</li>
 </ol>
+</section>
+<section id="lets-transform-our-data" class="level3">
+<h3 class="anchored" data-anchor-id="lets-transform-our-data">Let’s transform our data</h3>
 <p>Most of the code in these blocks will be Polars transformations. If you are familiar with PySpark you will find that the syntax is similar, no worries if this is your first time with Polars, let’s review what the code does.</p>
 <p>Filename: <a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/product_transformations.py"><code>transformers/product_transformations.py</code></a></p>
 <div class="cell">
@@ -951,22 +962,92 @@ Named figure&nbsp;2: Overview of Mage blocks functioning.
 <dl class="code-annotation-container-grid">
 <dt data-target-cell="annotated-cell-14" data-target-annotation="1">1</dt>
 <dd>
-<span data-code-cell="annotated-cell-14" data-code-lines="7,23" data-code-annotation="1">Categorize the liquor type (Tequila, Whisky, etc.)</span>
+<span data-code-cell="annotated-cell-14" data-code-lines="7,23" data-code-annotation="1">Categorize the liquor type (Tequila, Whisky, etc.).</span>
 </dd>
 <dt data-target-cell="annotated-cell-14" data-target-annotation="2">2</dt>
 <dd>
-<span data-code-cell="annotated-cell-14" data-code-lines="25" data-code-annotation="2">Define if we consider the product premium based on the price of the individual product.</span>
+<span data-code-cell="annotated-cell-14" data-code-lines="25" data-code-annotation="2">Determine whether the product is considered premium based on its individual price.</span>
 </dd>
 <dt data-target-cell="annotated-cell-14" data-target-annotation="3">3</dt>
 <dd>
-<span data-code-cell="annotated-cell-14" data-code-lines="27,30" data-code-annotation="3">Categorize the produc by size.</span>
+<span data-code-cell="annotated-cell-14" data-code-lines="27,30" data-code-annotation="3">Classify the product by size.</span>
 </dd>
 </dl>
 </div>
 </div>
-<p>Here <code>data</code> represents the upstream data frame that the block <code>pull_data_from_socrata</code> passed to this one, see that it is the first parameter of the <code>transform</code> transformer. Then we go to the polars transformation part modifying the <code>with_column</code> method, which is used to add or replace columns.</p>
-<p>Within <code>with_columns</code> we will proceed with the transformations</p>
+<p>In this context, <code>data</code> represents the upstream <code>DataFrame</code> passed to this block by <code>pull_data_from_socrata</code>. It is the first parameter of the <code>transform</code> transformer. The Polars transformation begins with the <code>with_columns</code> method, which is used to add or replace columns in the DataFrame.</p>
+<p>Within <code>with_columns</code>, we define the transformations. To create the first new variable, we use the <code>pl.when()</code> function to start a conditional statement. To reference a column, we use the <code>pl.col()</code> function. If you are familiar with Pandas or <code>dplyr</code>, this might feel counterintuitive at first, but it works in a similar fashion—just pass the column name as a string, e.g., <code>pl.col("your_col")</code>.</p>
+<p>Once the column is selected, we apply the <code>.str.contains()</code> method to check if the string in a cell contains a specified pattern. If the pattern matches, the value specified in <code>.then()</code> will be used. We can chain additional <code>.when()</code> statements for more conditions, and the default value, used when no condition is met, is specified with <code>.otherwise("Other")</code>. To name the new column, we use <code>.alias("liquor_type")</code>. If the name matches an existing column, it will overwrite that column.</p>
+<p>This transformation leverages chained operations, a powerful feature in Polars. Most Polars methods return a <code>DataFrame</code>, allowing you to immediately chain additional methods. This enhances code readability and makes debugging easier. Note that after the <code>.alias()</code> method, there is a comma <code>,</code> instead of a dot <code>.</code>, indicating the end of the chain.</p>
+<p>Next, we proceed with premium and size categorizations in a similar manner.</p>
+</section>
+<section id="test-test-test" class="level3">
+<h3 class="anchored" data-anchor-id="test-test-test">Test, test, test!</h3>
+<p>Once the new variables are created, we will write tests for the outputs to ensure a baseline level of quality for the new data.</p>
 <p>Filename: <a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/product_transformations.py"><code>transformers/product_transformations.py</code></a></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="annotated-cell-15"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-15-1"><a href="#annotated-cell-15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># -- snip --</span></span>
+<span id="annotated-cell-15-2"><a href="#annotated-cell-15-2" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-15" data-target-annotation="1" onclick="event.preventDefault();">1</a><span id="annotated-cell-15-3" class="code-annotation-target"><a href="#annotated-cell-15-3" aria-hidden="true" tabindex="-1"></a><span class="at">@test</span></span>
+<span id="annotated-cell-15-4"><a href="#annotated-cell-15-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_output(output, <span class="op">*</span>args) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="annotated-cell-15-5"><a href="#annotated-cell-15-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> output <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>, <span class="st">'The output is undefined'</span></span>
+<span id="annotated-cell-15-6"><a href="#annotated-cell-15-6" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-15" data-target-annotation="2" onclick="event.preventDefault();">2</a><span id="annotated-cell-15-7" class="code-annotation-target"><a href="#annotated-cell-15-7" aria-hidden="true" tabindex="-1"></a><span class="at">@test</span></span>
+<span id="annotated-cell-15-8"><a href="#annotated-cell-15-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_liquor_type_col(output, <span class="op">*</span>args) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="annotated-cell-15-9"><a href="#annotated-cell-15-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> output.get_column(<span class="st">"liquor_type"</span>) <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>, <span class="st">'The column liquor_type is undefined'</span></span>
+<span id="annotated-cell-15-10"><a href="#annotated-cell-15-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> output.get_column(<span class="st">"liquor_type"</span>).dtype <span class="kw">is</span> pl.Utf8, <span class="st">"The new variable type doesn't match"</span></span>
+<span id="annotated-cell-15-11"><a href="#annotated-cell-15-11" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-15" data-target-annotation="3" onclick="event.preventDefault();">3</a><span id="annotated-cell-15-12" class="code-annotation-target"><a href="#annotated-cell-15-12" aria-hidden="true" tabindex="-1"></a><span class="at">@test</span></span>
+<span id="annotated-cell-15-13"><a href="#annotated-cell-15-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_is_premium_col(output, <span class="op">*</span>args) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="annotated-cell-15-14"><a href="#annotated-cell-15-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> output.get_column(<span class="st">"is_premium"</span>) <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>, <span class="st">'The column is_premium is undefined'</span></span>
+<span id="annotated-cell-15-15"><a href="#annotated-cell-15-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> output.get_column(<span class="st">"is_premium"</span>).dtype <span class="kw">is</span> pl.Boolean, <span class="st">"The new variable type doesn't match"</span></span>
+<span id="annotated-cell-15-16"><a href="#annotated-cell-15-16" aria-hidden="true" tabindex="-1"></a></span>
+<a class="code-annotation-anchor" data-target-cell="annotated-cell-15" data-target-annotation="4" onclick="event.preventDefault();">4</a><span id="annotated-cell-15-17" class="code-annotation-target"><a href="#annotated-cell-15-17" aria-hidden="true" tabindex="-1"></a><span class="at">@test</span></span>
+<span id="annotated-cell-15-18"><a href="#annotated-cell-15-18" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_bottle_size_col(output, <span class="op">*</span>args) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="annotated-cell-15-19"><a href="#annotated-cell-15-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> output.get_column(<span class="st">"bottle_size"</span>) <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>, <span class="st">'The column bottle_size is undefined'</span></span>
+<span id="annotated-cell-15-20"><a href="#annotated-cell-15-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> output.get_column(<span class="st">"bottle_size"</span>).dtype <span class="kw">is</span> pl.Utf8, <span class="st">"The new variable type doesn't match"</span></span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-15" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-15" data-code-lines="3,5" data-code-annotation="1">Validate the overall output for correctness.</span>
+</dd>
+<dt data-target-cell="annotated-cell-15" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-15" data-code-lines="7,10" data-code-annotation="2">Verify the <code>liquor_type</code> column’s content and data type.</span>
+</dd>
+<dt data-target-cell="annotated-cell-15" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-15" data-code-lines="12,15" data-code-annotation="3">Check the <code>is_premium</code> column’s content and data type.</span>
+</dd>
+<dt data-target-cell="annotated-cell-15" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-15" data-code-lines="17,20" data-code-annotation="4">Ensure the <code>bottle_size</code> column’s content and data type are correct.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>Notice that each new variable has at least one associated test. While more detailed tests can be added later, these initial ones will suffice for now. And that’s essentially how a transformation block is structured. The next three transformation blocks follow a similar pattern, so I won’t explain them in detail, but feel free to review them as needed.</p>
+<ul>
+<li><a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/sales_and_price_related_metrics.py"><code>sales_and_price_related_metrics</code></a></li>
+<li><a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/volume_based_features.py"><code>volume_based_features</code></a></li>
+<li><a href="https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/time_based_features.py"><code>time_based_features</code></a></li>
+</ul>
+<p>That concludes our data transformation step! Next, we’ll move on to storing our valuable data.</p>
+<p><img src="img/transformation_done_data_lifecycle_logos.png" class="img-fluid"></p>
+</section>
+</section>
+<section id="storage" class="level2">
+<h2 class="anchored" data-anchor-id="storage">Storage</h2>
+<p>With a robust method for retrieving and transforming our data, the next step is to store and query it efficiently. For this purpose, we’ll use DuckDB. But why choose DuckDB?</p>
+<p>DuckDB is well-known for its in-memory data manipulation capabilities, but it also supports persistent storage with several compelling advantages. By using DuckDB’s native storage format, we gain the following benefits:</p>
+<ul>
+<li><a href="https://duckdb.org/why_duckdb.html"><strong>Free and open source:</strong></a> DuckDB is free and open-source, aligning with our preference for accessible and transparent tools<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a>.</li>
+<li><a href="https://duckdb.org/2022/10/28/lightweight-compression.html"><strong>Lightweight compression:</strong></a> it employs advanced compression techniques to reduce storage space while maintaining efficiency.</li>
+<li><a href="https://vldb.org/pvldb/vol11/p2209-kersten.pdf"><strong>Columnar vectorized query execution:</strong></a> DuckDB processes data in chunks (vectors) rather than row-by-row, making efficient use of CPU and memory. This design is optimized for modern hardware architectures. For a comprehensive explanation, see Kersten et al.&nbsp;(2018).</li>
+<li><a href="https://duckdb.org/docs/archive/1.0/internals/storage.html"><strong>Compact file structure:</strong></a> DuckDB stores data in a compact, self-contained binary file, making it portable and easy to manage.</li>
+<li><a href="https://www.manning.com/books/duckdb-in-action"><strong>Comprehensible resources:</strong></a> besides excellent documentation, DuckDB has a fantastic community that makes it easy to use this database system. You can get a free “DuckDB in Action” copy on the <a href="https://motherduck.com/duckdb-book-brief/">MotherDuck</a> webpage<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a>.</li>
+</ul>
 <p>Bash execution</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">user@user-pc:~/mage_duckdb_pipeline$</span> mage run . socrata_iowa_liquor_pipeline</span>
@@ -1010,6 +1091,7 @@ Named figure&nbsp;2: Overview of Mage blocks functioning.
 <section id="cited-works-and-recommended-readings" class="level2">
 <h2 class="anchored" data-anchor-id="cited-works-and-recommended-readings">Cited works and recommended readings</h2>
 <ul>
+<li>Kersten, T., Leis, V., Kemper, A., Neumann, T., Pavlo, A., &amp; Boncz, P. (2018). Everything you always wanted to know about compiled and vectorized queries but were afraid to ask. <em>Proceedings of the VLDB Endowment</em>, 11(13), 2209-2222. <a href="https://doi.org/10.14778/3275366.3275370">https://doi.org/10.14778/3275366.3275370</a></li>
 <li>Reis, J., &amp; Housley, M. (2022). <em>Fundamentals of data engineering: Plan and build robust data systems</em>. O’Reilly Media.</li>
 </ul>
 
@@ -1029,6 +1111,8 @@ Named figure&nbsp;2: Overview of Mage blocks functioning.
 <li id="fn7"><p>This occurs when the returned object is a data frame (Polars or Pandas). In this concrete case, that won’t happen since we’re returning a dictionary, but in the following blocks, it will be the case since the objects transferred will be Polars data frames. With dictionaries, serialization will still occur but in <a href="https://github.com/mage-ai/mage-ai/issues/4725">JSON format</a>.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn8"><p>We can also use <code>.pl()</code> to cast the results into a Polars data frame or <code>.df()</code> for a Pandas one.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn9"><p>For instance, I should move the <code>fetch_batch</code> function outside the <code>load_data_from_api</code> loader. Defining functions within other functions is generally considered a bad practice, as it can make the code harder to read, test, and maintain.<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10"><p>Repeat after me: “We love open source.”<a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn11"><p>We’ve found Manning a reliable editorial for technical books. Most of the time, their materials have high-quality content that is easy to digest. Highly recommended 👌<a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
