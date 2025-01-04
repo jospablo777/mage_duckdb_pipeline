@@ -148,7 +148,7 @@ source venv/bin/activate        # Activate the virtual environment.
 pip install -r requirements.txt # Install dependencies from the requirements file.
 ```
 
-The `requirements.txt` file contains the libraries required for the project, with the key players being `mage-ai` and `duckdb`. Now, that we have all our dependencies ready we can start our Mage project with:
+The `requirements.txt` file contains the libraries required for the project, with the key players being `mage-ai`, `polars`, and `duckdb`. Now, that we have all our dependencies ready we can start our Mage project with:
 
 ```{bash}
 #| label: start_mage
@@ -822,6 +822,122 @@ DuckDB is well-known for its in-memory data manipulation capabilities, but it al
 - [**Compact file structure:**](https://duckdb.org/docs/archive/1.0/internals/storage.html) DuckDB stores data in a compact, self-contained binary file, making it portable and easy to manage.
 - [**Comprehensible resources:**](https://www.manning.com/books/duckdb-in-action) besides excellent documentation, DuckDB has a fantastic community that makes it easy to use this database system. You can get a free "DuckDB in Action" copy on the [MotherDuck](https://motherduck.com/duckdb-book-brief/) webpage[^11].
 
+Due to this and its ease of use[^12], DuckDB is an ideal tool for our purpose. So let's continue with the implementation of our storage step.
+
+After we have finished with our data transformers, we can move to the data exporters. Here, we could have done this by creating only one data exporter, but for the sake of keep the blocks simple and modular (only one task per block) I decided to create two blocks for the data exportation, one for creating the table we will use to store our data, and a last one to export the data. We will start by analyzing the block responsible of the table creation.
+
+Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/create_duckdb_table.py)
+```{python}
+#| label: exporter_create_table_imports
+#| include: true
+#| eval: false
+
+import os
+import duckdb
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+# -- snip --
+```
+
+We specify the query for table creation:
+
+Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/create_duckdb_table.py)
+```{python}
+#| label: exporter_create_table_query
+#| include: true
+#| eval: false
+
+# -- snip --
+
+create_table_query = """
+    CREATE TABLE IF NOT EXISTS iowa_liquor_sales (
+        invoice_line_no TEXT PRIMARY KEY NOT NULL,
+        date TIMESTAMP NOT NULL,
+        store TEXT,
+        name TEXT,
+        address TEXT,
+        city TEXT,
+        zipcode TEXT,
+        store_location TEXT,
+        county_number TEXT,
+        county TEXT,
+        category TEXT,
+        category_name TEXT,
+        vendor_no TEXT,
+        vendor_name TEXT,
+        itemno TEXT,
+        im_desc TEXT,
+        pack REAL,
+        bottle_volume_ml REAL,
+        state_bottle_cost REAL,
+        state_bottle_retail REAL,
+        sale_bottles REAL,
+        sale_dollars REAL,
+        sale_liters REAL,
+        sale_gallons REAL,
+        liquor_type TEXT,
+        is_premium BOOLEAN,
+        bottle_size TEXT,
+        gov_profit_margin REAL,
+        gov_retail_markup_percentage REAL,
+        price_per_liter REAL,
+        price_per_gallon REAL,
+        total_volume_ordered_L REAL,
+        volume_to_revenue_ratio REAL,
+        week_day INTEGER,
+        is_weekend BOOLEAN,
+        quarter INTEGER
+);
+"""
+
+# -- snip --
+```
+
+Exporter:
+
+Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/create_duckdb_table.py)
+```{python}
+#| label: exporter_create_table_exporter
+#| include: true
+#| eval: false
+
+# -- snip --
+
+@data_exporter
+def export_data(data, *args, **kwargs):
+    # Create a connection to a file called 'data/iowa_liquor.duckdb'
+    # If the file doesn't exist it should create it
+    conn = duckdb.connect("data/iowa_liquor.duckdb")
+    # Create a table and load data into it
+    conn.sql(create_table_query)
+    # Explicitly close the connection
+    conn.close()
+    
+    # Pass the unmodified data
+    return data
+
+# -- snip --
+```
+
+Tests:
+Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/create_duckdb_table.py)
+```{python}
+#| label: exporter_create_table_tests
+#| include: true
+#| eval: false
+
+# -- snip --
+
+@test
+def test_output(output, *args) -> None:
+    assert output is not None, 'The output is undefined'
+
+@test
+def db_exist(*args) -> None:
+    assert os.path.exists("data/iowa_liquor.duckdb"), "The database file doesnt exist"
+```
 
 Bash execution
 
@@ -891,4 +1007,5 @@ https://knowyourmeme.com/memes/bonjour-bear
 [^8]: We can also use `.pl()` to cast the results into a Polars data frame or `.df()` for a Pandas one.
 [^9]: For instance, I should move the `fetch_batch` function outside the `load_data_from_api` loader. Defining functions within other functions is generally considered a bad practice, as it can make the code harder to read, test, and maintain.
 [^10]: Repeat after me: "We love open source."
-[^11]: We've found Manning a reliable editorial for technical books. Most of the time, their materials have high-quality content that is easy to digest. Highly recommended 👌
+[^11]: We've found Manning a reliable editorial for technical books. Most of the time, their materials have high-quality content that is easy to digest. Highly recommended 👌.
+[^12]: The only action we did to enable the use of DuckDB was `pip install duckdb`.
