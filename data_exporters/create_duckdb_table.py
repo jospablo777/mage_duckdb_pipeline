@@ -61,7 +61,7 @@ def export_data(data, *args, **kwargs):
     # Create a connection to a file called 'data/iowa_liquor.duckdb'
     # If the file doesn't exist it should create it
     conn = duckdb.connect("data/iowa_liquor.duckdb")
-    # Create a table and load data into it
+    # Create a table
     conn.sql(create_table_query)
     # Explicitly close the connection
     conn.close()
