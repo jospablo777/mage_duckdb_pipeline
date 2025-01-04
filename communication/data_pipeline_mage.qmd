@@ -832,16 +832,20 @@ Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo7
 #| include: true
 #| eval: false
 
-import os
-import duckdb
+import os # <1>
+import duckdb # <2>
 
 if 'data_exporter' not in globals():
     from mage_ai.data_preparation.decorators import data_exporter
 
 # -- snip --
 ```
+1. We will use the `os` module in our tests.
+2. Python DuckDB client.
 
-We specify the query for table creation:
+We start with the imports—of course, we’ll need the DuckDB client. If you’ve been following this tutorial, you should have installed it along with the dependencies. Next, we define a query to create the table where we will store our data. This step is crucial to specify the data types for each column.
+
+Another critical aspect is defining constraints for the table. Here, we specify that two columns cannot contain null values and designate `invoice_line_no` as the primary key. But is this necessary? If we aim to enforce data integrity and prevent duplication, the answer is yes.
 
 Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/create_duckdb_table.py)
 ```{python}
@@ -895,7 +899,7 @@ create_table_query = """
 # -- snip --
 ```
 
-Exporter:
+This query also helps eliminate potential ambiguities when the data is exported. With the query defined, we can now move on to the main functionality of this block, the exporter[^13]. The logic is quite simple. 
 
 Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/create_duckdb_table.py)
 ```{python}
@@ -921,7 +925,7 @@ def export_data(data, *args, **kwargs):
 3. Explicitly close the connection so no access to the database is blocked downstream
 4. Return the unmodified data that was passed upstream.
 
-Tests:
+Here, we connect to our local database, create the table if it doesn't exist, and close the connection to avoid blocking its access downstream. And that's the main task of this block. Then, we validate that untouched upstream data has been passed and that the database file is also there:
 
 Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/create_duckdb_table.py)
 ```{python}
@@ -939,6 +943,60 @@ def test_output(output, *args) -> None:
 def db_exist(*args) -> None:
     assert os.path.exists("data/iowa_liquor.duckdb"), "The database file doesnt exist"
 ```
+
+
+Now we move to the real exporter, and the last block of our flow. And as you already guessed, here is where we store the retrieved data to our local database. First we establish a connection with our database, and use the object `conn` to interact with it, then we try to insert the freshly fetched and transformed data to the table `iowa_liquor_sales`. If a constraint exception is raised we check for duplicates in out batch, exclude them, and try to insert them again. This exception handling will be specially useful when we are at the stage of just updating with the last records our data base. You can examine this in the block:
+
+Filename: [`data_exporters/export_polars_to_duckdb.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/export_polars_to_duckdb.py)
+```{python}
+#| label: exporter_export_polars_to_duckdb
+#| include: true
+#| eval: false
+
+# -- snip --
+
+@data_exporter
+def insert_data_in_table(data, *args, **kwargs):
+    conn = duckdb.connect("data/iowa_liquor.duckdb") # <1>
+
+    try: # <2>
+        conn.register("data", data)
+        conn.execute("INSERT INTO iowa_liquor_sales SELECT * FROM data") # <2>
+    except duckdb.ConstraintException as e: # <3>
+        print(e)
+        existing_keys_df = conn.execute("SELECT invoice_line_no FROM iowa_liquor_sales").fetchdf() # <4>
+        existing_keys_series = pl.DataFrame(existing_keys_df)["invoice_line_no"] 
+
+        filtered_data = data.filter(~data["invoice_line_no"].is_in(existing_keys_series)) # <4>
+
+        if filtered_data.height > 0: # <5>
+            conn.register("filtered_data", filtered_data)  
+            conn.execute("INSERT INTO iowa_liquor_sales SELECT * FROM filtered_data") # <5>
+        else:
+            print("No new records to insert.")
+
+    conn.close() # <6>
+
+    print("Data loaded to your DuckDB database!")
+```
+1. Connect to the local database.
+2. Attempt to insert the data into the `iowa_liquor_sales` table.
+3. If a constraint exception occurs, it likely means the batch of data pulled contains records already present in the database.
+4. In case of an exception, query the invoice IDs from the local database and filter out the duplicate records from the incoming batch.
+5. If the filtered `DataFrame` still contains records, proceed with inserting them into the table.
+6. Close the database connection to ensure safety and prevent potential issues.
+
+We have finished the implementation of our pipeline! Congrats!
+
+### Test the pipeline in Mage
+
+Now it's time to see if it works. To do this, click on the three-dot icon in the upper-right corner of your last block (`export_polars_to_duckdb`).
+
+![](img/test_pipeline_in_mage.png)
+
+Here, select the option labeled "Execute with all upstream blocks." This will run the entire pipeline. If an error occurs, Python/Mage will notify you, allowing you to begin debugging.
+
+## Run the data pipeline in the terminal
 
 Bash execution
 
@@ -995,7 +1053,8 @@ https://knowyourmeme.com/memes/bonjour-bear
 
 ## Cited works and recommended readings
 
-- Kersten, T., Leis, V., Kemper, A., Neumann, T., Pavlo, A., & Boncz, P. (2018). Everything you always wanted to know about compiled and vectorized queries but were afraid to ask. *Proceedings of the VLDB Endowment*, 11(13), 2209-2222. [https://doi.org/10.14778/3275366.3275370](https://doi.org/10.14778/3275366.3275370)
+- Kersten, T., Leis, V., Kemper, A., Neumann, T., Pavlo, A., & Boncz, P. (2018). Everything you always wanted to know about compiled and vectorized queries but were afraid to ask. *Proceedings of the VLDB Endowment*, 11(13), 2209-2222. [https://doi.org/10.14778/3275366.3275370](https://doi.org/10.14778/3275366.3275370).
+
 - Reis, J., & Housley, M. (2022). *Fundamentals of data engineering: Plan and build robust data systems*. O'Reilly Media.
 
 [^1]: According to their web page :)
@@ -1010,3 +1069,4 @@ https://knowyourmeme.com/memes/bonjour-bear
 [^10]: Repeat after me: "We love open source."
 [^11]: We've found Manning a reliable editorial for technical books. Most of the time, their materials have high-quality content that is easy to digest. Highly recommended 👌.
 [^12]: The only action we did to enable the use of DuckDB was `pip install duckdb`.
+[^13]: Please note that this is not a traditional exporter block; it could be a custom block. I chose the exporter type because it interacts with the local database and creates the table, even though no data is exported in an explicit manner.
