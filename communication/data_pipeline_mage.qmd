@@ -810,7 +810,7 @@ That concludes our data transformation step! Next, we’ll move on to storing ou
 
 ![](img/transformation_done_data_lifecycle_logos.png)
 
-## Storage
+## Persistent storage and serving
 
 With a robust method for retrieving and transforming our data, the next step is to store and query it efficiently. For this purpose, we’ll use DuckDB. But why choose DuckDB?
 
@@ -907,21 +907,22 @@ Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo7
 
 @data_exporter
 def export_data(data, *args, **kwargs):
-    # Create a connection to a file called 'data/iowa_liquor.duckdb'
-    # If the file doesn't exist it should create it
-    conn = duckdb.connect("data/iowa_liquor.duckdb")
-    # Create a table and load data into it
-    conn.sql(create_table_query)
-    # Explicitly close the connection
-    conn.close()
+
+    conn = duckdb.connect("data/iowa_liquor.duckdb") # <1>
+    conn.sql(create_table_query) # <2>
+    conn.close() # <3>
     
-    # Pass the unmodified data
-    return data
+    return data # <4>
 
 # -- snip --
 ```
+1. Create a connection to a file called `data/iowa_liquor.duckdb`. If the file doesn't exist it should create it
+2. Creates the table with our query.
+3. Explicitly close the connection so no access to the database is blocked downstream
+4. Return the unmodified data that was passed upstream.
 
 Tests:
+
 Filename: [`data_exporters/create_duckdb_table.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/create_duckdb_table.py)
 ```{python}
 #| label: exporter_create_table_tests
