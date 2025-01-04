@@ -994,11 +994,21 @@ Now it's time to see if it works. To do this, click on the three-dot icon in the
 
 ![](img/test_pipeline_in_mage.png)
 
-Here, select the option labeled "Execute with all upstream blocks." This will run the entire pipeline. If an error occurs, Python/Mage will notify you, allowing you to begin debugging.
+Here, select the option labeled "Execute with all upstream blocks." This will run the entire pipeline. If an error occurs, Python/Mage will notify you, allowing you to begin debugging. If the process runs successfully, then your first batch of data will be stored in your local database.
 
 ## Run the data pipeline in the terminal
 
-Bash execution
+Now open a terminal in the project folder and run:
+
+```{bash}
+#| label: bash_pipeline_run
+#| include: true
+#| eval: false
+
+mage run . socrata_iowa_liquor_pipeline
+```
+
+We use the `run` command to execute the pipeline. The dot (`.`) refers to the current directory (assuming you're in the project's folder), and `socrata_iowa_liquor_pipeline` is the name of our pipeline. If everything runs successfully, your second batch should now be stored in your local database. A successful output will look like this:
 
 ```{bash}
 #| label: bash_pipeline_output
@@ -1020,6 +1030,7 @@ Data loaded to your DuckDB database!
 Pipeline run completed.
 ```
 
+## Data analytics
 
 ```{r}
 #| label: dbi_connection
@@ -1030,6 +1041,7 @@ conn2 <- DBI::dbConnect(
 )
 ```
 
+## Predictive modeling (machine learning)
 
 ```{python}
 #| label: python_conn
