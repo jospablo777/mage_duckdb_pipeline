@@ -1061,7 +1061,7 @@ polars_df.height
 
 ## About the polar bear in the header
 
-https://knowyourmeme.com/memes/bonjour-bear
+It's the *Bonjour* Bear, you can read more about the bear in [Know Your Meme](https://knowyourmeme.com/memes/bonjour-bear) :)
 
 ## Cited works and recommended readings
 
