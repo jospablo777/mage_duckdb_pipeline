@@ -1066,9 +1066,10 @@ Notice that we indicate `read_only = TRUE` so this connection can be shared betw
 #| connection: conn
 #| output.var: bottles_sold_per_type
 
-SELECT date,
-       liquor_type,
-       SUM(sale_bottles) AS bottles_sold
+SELECT 
+  date,
+  liquor_type,
+  SUM(sale_bottles) AS bottles_sold
 FROM iowa_liquor_sales
 GROUP BY date, liquor_type
 ```
@@ -1127,11 +1128,11 @@ For this query, we will use a Common Table Expression (CTE) to retrieve the late
 
 WITH ranked_stores AS (
     SELECT 
-        store, 
-        name, 
-        address, 
-        store_location,
-        ROW_NUMBER() OVER (PARTITION BY store ORDER BY date DESC) AS row_num
+      store, 
+      name, 
+      address, 
+      store_location,
+      ROW_NUMBER() OVER (PARTITION BY store ORDER BY date DESC) AS row_num
     FROM iowa_liquor_sales
     WHERE YEAR(date) >= 2024
           AND store_location IS NOT NULL
@@ -1216,21 +1217,112 @@ Now that we better understand our data, we can use our DuckDB to feed some algor
 
 ## Predictive modeling (machine learning)
 
+
+
+```{python}
+#| label: python_setup
+
+import duckdb
+import pandas as pd
+from sktime.forecasting.compose import make_reduction
+from sktime.forecasting.model_selection import temporal_train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.preprocessing import OneHotEncoder
+
+```
+
+
 ```{python}
 #| label: python_conn
-#| eval: false
-import duckdb
 
-con_py = duckdb.connect("../data/iowa_liquor.duckdb", read_only=True)
+conn_py = duckdb.connect("../data/iowa_liquor.duckdb", read_only=True)
 
-polars_df = con_py.sql("SELECT liquor_type, bottle_size, price_per_liter FROM iowa_liquor_sales LIMIT 10").pl()
 
-polars_df
 ```
+
+```{python}
+
+query_liquors_sales = """
+SELECT 
+    DATE_TRUNC('month', date) AS year_month,
+    MONTHNAME(year_month) AS month,
+    liquor_type,
+    SUM(sale_bottles) AS bottles_sold
+FROM iowa_liquor_sales
+WHERE YEAR(date) < 2020
+GROUP BY year_month, liquor_type
+ORDER BY year_month;
+"""
+
+data_df = conn_py.sql(query_liquors_sales).df()
+
+data_df
+
+```
+
 ```{python}
 #| eval: false
-polars_df.height
+pivoted_data = data_df.pivot(index='year_month', columns='liquor_type', values='bottles_sold').reset_index()
+
+# Fill missing values (just in case)
+pivoted_data = pivoted_data.fillna(0)
+
+# Add the `month` as a categorical feature
+pivoted_data['month'] = pd.to_datetime(pivoted_data['year_month']).dt.month_name()
+
+pivoted_data
 ```
+
+```{python}
+# Filter the data to include only rows for training and testing
+pivoted_data['year_month'] = pd.to_datetime(pivoted_data['year_month'])
+pivoted_data = pivoted_data.sort_values(by='year_month')  # Ensure chronological order
+
+# Define target (Rum) and features (all other columns except year_month and Rum)
+target = 'Rum'
+features = [col for col in pivoted_data.columns if col not in ['year_month', 'Rum']]
+
+# Split into train and test
+y = pivoted_data[target]  # Target variable
+X = pivoted_data[features]  # Features
+
+# Define test period (last two quarters of 2019)
+train_cutoff = pivoted_data['year_month'] < '2019-07-01'
+test_cutoff = ~train_cutoff
+
+X_train, X_test = X[train_cutoff], X[test_cutoff]
+y_train, y_test = y[train_cutoff], y[test_cutoff]
+```
+
+```{python}
+# One-hot encode the month feature
+encoder = OneHotEncoder(sparse=False, drop='first')  # Avoid dummy variable trap
+encoded_months = encoder.fit_transform(X_train[['month']])
+
+# Replace the original 'month' column with encoded columns
+month_columns = encoder.get_feature_names_out(['month'])
+X_train_encoded = pd.DataFrame(encoded_months, columns=month_columns, index=X_train.index)
+X_test_encoded = pd.DataFrame(encoder.transform(X_test[['month']]), columns=month_columns, index=X_test.index)
+
+# Drop the original 'month' column and add the encoded columns
+X_train = X_train.drop(columns=['month']).join(X_train_encoded)
+X_test = X_test.drop(columns=['month']).join(X_test_encoded)
+```
+
+
+```{python}
+# Define the forecaster
+forecaster = make_reduction(
+    RandomForestRegressor(random_state=42), 
+    strategy="recursive", 
+    window_length=6  # Use 6 months of past data
+)
+
+# Fit the forecaster
+forecaster.fit(y_train, X=X_train)
+```
+
 
 ## About the polar bear in the header
 
