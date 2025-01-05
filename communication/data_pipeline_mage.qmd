@@ -1116,7 +1116,7 @@ month_sales_plot <- ggplot(bottle_sales_by_month, aes(x = month, y = monthly_bot
 plotly::ggplotly(month_sales_plot)
 ```
 
-The most popular liquors in Iowa seem to be whisky and vodka. The good news for Mezcal adepts is that it has been available in stores since 2016. Let's say we like mezcal and want to buy a bottle as a treat. However, as the chart shows, it is not the most popular drink, so now we want to know where to buy a bottle. Our quest will begin with a query to our DuckDB.
+The most popular liquors in Iowa seem to be whisky and vodka. The good news for Mezcal adepts is that it has been available in stores since 2016. Let's say we like mezcal and want to buy a bottle as a treat. However, as the chart shows, it is not the most popular drink, so now we want to know where to buy a bottle. Our quest will begin with a query to our DuckDB. Since this chart is interactive, you can zoom in to examine it further; to zoom out, double-click on the chart.
 
 For this query, we will use a Common Table Expression (CTE) to retrieve the latest record for each store. We also filter the data to include only records from 2024 onward, where a geolocation is available, and the invoice corresponds to a mezcal purchase. Since the CTE ranks records by the most recent purchases, we can easily select the first record for each store in the main query.
 
@@ -1161,7 +1161,7 @@ It contains the:
 
 All the information we need to get our bottle. But a table with more than 300 stores is not easy to digest. So let's put that into a map; locating the stores closest to us would be easy.
 
-We will begin by converting our retrieved information into a simple features object (`sf`). The `sf` library greatly simplifies geospatial analysis, especially when working with geospatial data types. First, we transform the `store_location` column (which is a string) into a `POINT` geometry type using the `st_as_sfc` function. Specifying the coordinate reference system (`crs = 4326`) is crucial here.
+We will begin by converting our retrieved information into a [simple features](https://r-spatial.github.io/sf/articles/sf1.html) object (`sf`). The `sf` library greatly simplifies geospatial analysis, especially when working with geometry data types. First, we transform the `store_location` column (which is string type) into a `POINT` geometry type using the `st_as_sfc` function. Specifying the coordinate reference system (`crs = 4326`) is crucial here.
 
 Although our dataset documentation does not explicitly mention the coordinate reference system, WGS84 CRS (EPSG:4326) is the most logical choice. This is because WGS84 is the standard and most widely used system for representing latitude-longitude coordinates, making it the most likely CRS for our data[^15].
 
