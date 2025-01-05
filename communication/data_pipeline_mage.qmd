@@ -1083,7 +1083,7 @@ bottles_sold_per_type %>%
   gt::gt()
 ```
 
-Let's say we want to know how well we sell liquor and see if there is a trend in our historical data. We start by aggregating our freshly queried data. One advantage of using R is that its libraries have pretty useful abstractions; for example, we will use `floor_date` from `lubricate` to aggregate the data by month.
+Let's say we want to know how well we sell liquor and see if there is a trend in our historical data. We start by aggregating our freshly queried data. One advantage of using R is that its libraries have pretty useful abstractions; for example, we will use `floor_date` from `lubridate` to aggregate the data by month.
 
 ```{r}
 #| label: aggregation_by_month
@@ -1094,6 +1094,7 @@ bottle_sales_by_month <- bottles_sold_per_type %>%
   summarise(monthly_bottles_sold = sum(bottles_sold))
 ```
 
+Using `lubridate` is more straightforward and less verbose than applying this logic in SQL, so we took advantage of R capabilities. Now that our data is ready let's visualize it to get some knowledge:
 
 ```{r}
 #| label: chart_monthly_sold_bottles
@@ -1115,7 +1116,7 @@ month_sales_plot <- ggplot(bottle_sales_by_month, aes(x = month, y = monthly_bot
 plotly::ggplotly(month_sales_plot)
 ```
 
-The most popular liquors in Iowa seem to be whisky and vodka. The good news for Mezcal Adepts is that it has been available in stores since 2016. Let's say we like mezcal and want to buy a bottle as a treat. However, as the chart shows, it is not the most popular drink, so now we want to know where to buy a bottle. Our quest will begin with a query to our DuckDB.
+The most popular liquors in Iowa seem to be whisky and vodka. The good news for Mezcal adepts is that it has been available in stores since 2016. Let's say we like mezcal and want to buy a bottle as a treat. However, as the chart shows, it is not the most popular drink, so now we want to know where to buy a bottle. Our quest will begin with a query to our DuckDB.
 
 For this query, we will use a Common Table Expression (CTE) to retrieve the latest record for each store. We also filter the data to include only records from 2024 onward, where a geolocation is available, and the invoice corresponds to a mezcal purchase. Since the CTE ranks records by the most recent purchases, we can easily select the first record for each store in the main query.
 
@@ -1148,20 +1149,42 @@ The resulting table is stored in `bottles_sold_per_type`, let's examine it:
 #| label: mezcal_stores_location_table
 
 bottles_sold_per_type %>% 
-  head(10) %>% 
+  head(3) %>% 
   gt::gt()
 ```
 
+It contains the:
+
+- Store code (ID)
+- Store name
+- Geolocation
+
+All the information we need to get our bottle. But a table with more than 300 stores is not easy to digest. So let's put that into a map; locating the stores closest to us would be easy.
+
+We will begin by converting our retrieved information into a simple features object (`sf`). The `sf` library greatly simplifies geospatial analysis, especially when working with geospatial data types. First, we transform the `store_location` column (which is a string) into a `POINT` geometry type using the `st_as_sfc` function. Specifying the coordinate reference system (`crs = 4326`) is crucial here.
+
+Although our dataset documentation does not explicitly mention the coordinate reference system, WGS84 CRS (EPSG:4326) is the most logical choice. This is because WGS84 is the standard and most widely used system for representing latitude-longitude coordinates, making it the most likely CRS for our data[^15].
+
+
 ```{r}
+#| label: mezcal_stores_location_sf
+
 bottles_sold_per_type_0 <- bottles_sold_per_type %>%
   mutate(geometry = st_as_sfc(store_location, crs = 4326)) %>% 
   select(-store_location) %>% 
   st_as_sf()
 
+# To peep the contents of our sf object
 bottles_sold_per_type_0
 ```
 
+We displayed a print of the contents of our `sf` object so you can get a sense of what it is: a data frame with geospatial metadata and geometry types. DuckDB has some extensions that make geospatial types available, but we are not using them here to avoid adding more complexity to the upstream system.
+
+Let's continue with our map. We will create the map using the `leaflet` library; it is easy to use and has beautiful and usable results. We feed this visualization with the `sf` object we just created.
+
 ```{r}
+#| label: mezcal_stores_interactive_map
+
 leaflet(data = bottles_sold_per_type_0) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%  # Add a base map
   addCircleMarkers(
@@ -1177,15 +1200,19 @@ leaflet(data = bottles_sold_per_type_0) %>%
   ) %>%
   addLegend(
     position = "bottomright",
-    title = "Liquor Stores in Iowa",
+    title = "Liquor stores that sell mezcal in Iowa",
     colors = "#ed7c65",
-    labels = "Store Locations",
+    labels = "Store locations",
     opacity = 0.7
   )
 ```
 
 
-Great! Now we have a map of the stores that recently made an order of mezcal.
+Great! Now, we have a map of the stores that recently ordered mezcal. We can look for the closest one and go there for our treat. You can also click the dot of your store of interest to get its name and address.
+
+![](img/analytics_done_data_lifecycle_logos.png)
+
+Now that we better understand our data, we can use our DuckDB to feed some algorithms and get predictive (machine learning) models.
 
 ## Predictive modeling (machine learning)
 
@@ -1229,3 +1256,4 @@ It's the *Bonjour* Bear, you can read more about the bear in [Know Your Meme](ht
 [^12]: The only action we did to enable the use of DuckDB was `pip install duckdb`.
 [^13]: Please note that this is not a traditional exporter block; it could be a custom block. I chose the exporter type because it interacts with the local database and creates the table, even though no data is exported in an explicit manner.
 [^14]: Free Bird's guitar solo starts playing in the background 🎸🎶🎶.
+[^15]: If you've had the pleasure to work with geospatial analysis before, you probably already know that CRSs are always awfully documented (i.e., not documentation at all). So, working with coordinates of less standard regions is a painful process full of guesses.
