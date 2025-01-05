@@ -31,6 +31,9 @@ editor: source
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(lubridate)
+library(sf)
+library(leaflet)
 
 # Tell quarto where is our python venv
 Sys.setenv(RETICULATE_PYTHON = "../venv/bin/python")
@@ -1030,16 +1033,159 @@ Data loaded to your DuckDB database!
 Pipeline run completed.
 ```
 
+You can continue with this until your local data is up to date. Remember that we set a limit to fetch a maximum of five years per run. Feel free to adjust this in the `pull_data_from_socrata` loader.
+
+### Should I manually run the pipeline whenever I need to update the data?
+
+Running the pipeline in your terminal might be an option, but not the most appealing one, depending on your use case. For instance, the Iowa Liquor data set is updated once per month with the new data available on the 1st of each month, according to the [documentation.](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) Hence, it makes sense to run an update job once per month. We can configure a trigger for this, and it is very easy to do, so go review Mage's [documentation](https://docs.mage.ai/orchestration/triggers/configure-triggers-in-code) if you are in the need.
+
+![](img/serving_done_data_lifecycle_logos.png)
+
+And our data is ready to be served via SQL! We can continue with the pipeline's end goal: analytics and modeling.
+
+
 ## Data analytics
+
+Many proprietary dashboarding tools can take advantage of our DuckDB database. But in keeping with the spirit of our project, we will use the R language for this purpose since it is free, open-source[^14], and extremely powerful.
+
+We start by connecting to our local database within our R environment. This connection will be called `conn`:
 
 ```{r}
 #| label: dbi_connection
-conn2 <- DBI::dbConnect(
+conn <- DBI::dbConnect(
   drv = duckdb::duckdb(),
   dbdir = "../data/iowa_liquor.duckdb",
   read_only = TRUE
 )
 ```
+
+Notice that we indicate `read_only = TRUE` so this connection can be shared between processes. With our connection in place, let's query some data to visualize:
+
+```{sql}
+#| label: query_agg_liquors
+#| connection: conn
+#| output.var: bottles_sold_per_type
+
+SELECT date,
+       liquor_type,
+       SUM(sale_bottles) AS bottles_sold
+FROM iowa_liquor_sales
+GROUP BY date, liquor_type
+```
+
+The output table of this query is stored in `bottles_sold_per_type`. Let's have a peek at it:
+
+```{r}
+#| label: first_query_head
+
+bottles_sold_per_type %>% 
+  head(5) %>% 
+  gt::gt()
+```
+
+Let's say we want to know how well we sell liquor and see if there is a trend in our historical data. We start by aggregating our freshly queried data. One advantage of using R is that its libraries have pretty useful abstractions; for example, we will use `floor_date` from `lubricate` to aggregate the data by month.
+
+```{r}
+#| label: aggregation_by_month
+
+bottle_sales_by_month <- bottles_sold_per_type %>% 
+  group_by(month = floor_date(date, 'month'), # Group by month
+           liquor_type) %>% 
+  summarise(monthly_bottles_sold = sum(bottles_sold))
+```
+
+
+```{r}
+#| label: chart_monthly_sold_bottles
+
+month_sales_plot <- ggplot(bottle_sales_by_month, aes(x = month, y = monthly_bottles_sold, color = liquor_type)) +
+  geom_line() + 
+  geom_point() +
+  labs(
+    title = "Liquor bottles sold by month",
+    x = "Date",
+    y = "Bottles sold",
+    color = "Liquor type"
+  ) +
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
+
+plotly::ggplotly(month_sales_plot)
+```
+
+The most popular liquors in Iowa seem to be whisky and vodka. The good news for Mezcal Adepts is that it has been available in stores since 2016. Let's say we like mezcal and want to buy a bottle as a treat. However, as the chart shows, it is not the most popular drink, so now we want to know where to buy a bottle. Our quest will begin with a query to our DuckDB.
+
+For this query, we will use a Common Table Expression (CTE) to retrieve the latest record for each store. We also filter the data to include only records from 2024 onward, where a geolocation is available, and the invoice corresponds to a mezcal purchase. Since the CTE ranks records by the most recent purchases, we can easily select the first record for each store in the main query.
+
+```{sql}
+#| label: mezcal_stores_location
+#| connection: conn
+#| output.var: bottles_sold_per_type
+
+WITH ranked_stores AS (
+    SELECT 
+        store, 
+        name, 
+        address, 
+        store_location,
+        ROW_NUMBER() OVER (PARTITION BY store ORDER BY date DESC) AS row_num
+    FROM iowa_liquor_sales
+    WHERE YEAR(date) >= 2024
+          AND store_location IS NOT NULL
+          AND liquor_type = 'Mezcal'
+)
+
+SELECT store, name, address, store_location
+FROM ranked_stores
+WHERE row_num = 1;
+```
+
+The resulting table is stored in `bottles_sold_per_type`, let's examine it:
+
+```{r}
+#| label: mezcal_stores_location_table
+
+bottles_sold_per_type %>% 
+  head(10) %>% 
+  gt::gt()
+```
+
+```{r}
+bottles_sold_per_type_0 <- bottles_sold_per_type %>%
+  mutate(geometry = st_as_sfc(store_location, crs = 4326)) %>% 
+  select(-store_location) %>% 
+  st_as_sf()
+
+bottles_sold_per_type_0
+```
+
+```{r}
+leaflet(data = bottles_sold_per_type_0) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%  # Add a base map
+  addCircleMarkers(
+    lng = ~st_coordinates(geometry)[, 1],  # Extract longitude
+    lat = ~st_coordinates(geometry)[, 2],  # Extract latitude
+    popup = ~paste0(
+      "<strong>Store:</strong> ", name, "<br>",
+      "<strong>Address:</strong> ", address, "<br>"
+    ),
+    radius = 5,
+    color = "#ed7c65",
+    fillOpacity = 0.7
+  ) %>%
+  addLegend(
+    position = "bottomright",
+    title = "Liquor Stores in Iowa",
+    colors = "#ed7c65",
+    labels = "Store Locations",
+    opacity = 0.7
+  )
+```
+
+
+Great! Now we have a map of the stores that recently made an order of mezcal.
 
 ## Predictive modeling (machine learning)
 
@@ -1082,3 +1228,4 @@ It's the *Bonjour* Bear, you can read more about the bear in [Know Your Meme](ht
 [^11]: We've found Manning a reliable editorial for technical books. Most of the time, their materials have high-quality content that is easy to digest. Highly recommended 👌.
 [^12]: The only action we did to enable the use of DuckDB was `pip install duckdb`.
 [^13]: Please note that this is not a traditional exporter block; it could be a custom block. I chose the exporter type because it interacts with the local database and creates the table, even though no data is exported in an explicit manner.
+[^14]: Free Bird's guitar solo starts playing in the background 🎸🎶🎶.
