@@ -1217,7 +1217,13 @@ Now that we better understand our data, we can use our DuckDB to feed some algor
 
 ## Predictive modeling (machine learning)
 
+We have a lightning-fast local database for advanced analytics, and we can use the same resource for statistical and predictive modeling. Let's say [some gangster is dissin ya' fly girl]{style="text-decoration: line-through;"} we're in the middle of 2019, and the supply chain team is interested in rum supply for the end of the year due to the upcoming holidays. 
 
+![](img/411_simpsons.gif){fig-align="center"}
+
+You don't know the details well, but you suspect it has something to do with a conversation you overheard about Martha Stewart's [jet fuel recipe](https://www.youtube.com/watch?v=IPrnBb1BEHw) getting too popular. Anyways, you're excited since you were looking forward to doing some forecasting work by now.
+
+You start by setting up your Python environment for this job. R is undoubtedly nice for advanced analytics, but you do your machine learning with Python[^16].
 
 ```{python}
 #| label: python_setup
@@ -1229,19 +1235,22 @@ from sktime.forecasting.model_selection import temporal_train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import OneHotEncoder
+import matplotlib.pyplot as plt
 
 ```
 
+With your prelude ready, we continue by establishing a connection with our local database:
 
 ```{python}
 #| label: python_conn
 
 conn_py = duckdb.connect("../data/iowa_liquor.duckdb", read_only=True)
-
-
 ```
 
+After we have our connection in Python, we can query the data we will need for the model.
+
 ```{python}
+#| label: query_data_for_prediction
 
 query_liquors_sales = """
 SELECT 
@@ -1257,12 +1266,13 @@ ORDER BY year_month;
 
 data_df = conn_py.sql(query_liquors_sales).df()
 
-data_df
+data_df.head(5)
 
 ```
 
+Since we are working with time series data, we will need to reshape our data
+
 ```{python}
-#| eval: false
 pivoted_data = data_df.pivot(index='year_month', columns='liquor_type', values='bottles_sold').reset_index()
 
 # Fill missing values (just in case)
@@ -1271,7 +1281,7 @@ pivoted_data = pivoted_data.fillna(0)
 # Add the `month` as a categorical feature
 pivoted_data['month'] = pd.to_datetime(pivoted_data['year_month']).dt.month_name()
 
-pivoted_data
+pivoted_data.head(5)
 ```
 
 ```{python}
@@ -1297,21 +1307,23 @@ y_train, y_test = y[train_cutoff], y[test_cutoff]
 
 ```{python}
 # One-hot encode the month feature
-encoder = OneHotEncoder(sparse=False, drop='first')  # Avoid dummy variable trap
-encoded_months = encoder.fit_transform(X_train[['month']])
+encoder = OneHotEncoder(sparse_output=False, drop='first')  # Updated argument name
+encoded_months_train = encoder.fit_transform(X_train[['month']])
+encoded_months_test  = encoder.transform(X_test[['month']])
 
 # Replace the original 'month' column with encoded columns
-month_columns = encoder.get_feature_names_out(['month'])
-X_train_encoded = pd.DataFrame(encoded_months, columns=month_columns, index=X_train.index)
-X_test_encoded = pd.DataFrame(encoder.transform(X_test[['month']]), columns=month_columns, index=X_test.index)
+month_columns   = encoder.get_feature_names_out(['month'])
+X_train_encoded = pd.DataFrame(encoded_months_train, columns=month_columns, index=X_train.index)
+X_test_encoded  = pd.DataFrame(encoded_months_test, columns=month_columns, index=X_test.index)
 
 # Drop the original 'month' column and add the encoded columns
 X_train = X_train.drop(columns=['month']).join(X_train_encoded)
-X_test = X_test.drop(columns=['month']).join(X_test_encoded)
+X_test  = X_test.drop(columns=['month']).join(X_test_encoded)
 ```
 
-
 ```{python}
+#| warning: false
+
 # Define the forecaster
 forecaster = make_reduction(
     RandomForestRegressor(random_state=42), 
@@ -1323,6 +1335,68 @@ forecaster = make_reduction(
 forecaster.fit(y_train, X=X_train)
 ```
 
+
+Forecast rum sales:
+```{python}
+# Define the forecasting horizon
+fh = list(range(1, len(y_test) + 1))  # Forecast horizon matches test data length
+
+# Forecast
+y_pred = forecaster.predict(fh, X=X_test)
+
+# Print results
+print("Forecasted Rum Sales for the last two quarters of 2019:")
+print(y_pred)
+```
+
+Evaluate
+```{python}
+# Evaluate the forecast
+mae = mean_absolute_error(y_test, y_pred)
+mse = mean_squared_error(y_test, y_pred)
+
+print(f"Mean Absolute Error (MAE): {mae}")
+print(f"Mean Squared Error (MSE): {mse}")
+```
+
+```{python}
+# Combine actual and predicted data
+results_2019 = pivoted_data[pivoted_data['year_month'].dt.year == 2019][['year_month', 'Rum']].copy()
+results_2019['Forecast'] = None
+
+# Assign forecast values for the test period
+results_2019.loc[results_2019['year_month'] >= '2019-07-01', 'Forecast'] = y_pred.values
+
+# Plot the results
+plt.figure(figsize=(10, 6))
+
+# Plot actual Rum sales
+plt.plot(results_2019['year_month'], results_2019['Rum'], label='Actual rum sales', marker='o')
+
+# Plot forecasted Rum sales
+plt.plot(results_2019['year_month'], results_2019['Forecast'], label='Forecasted rum sales', linestyle='--', marker='x', color='#b1d25a')
+
+# Highlight the test period
+plt.axvline(x=pd.to_datetime('2019-07-01'), color='#ed7c65', linestyle='--', label='Start of test period')
+
+# Add titles and labels
+plt.title('Actual vs. forecasted rum sales in 2019')
+plt.xlabel('Month')
+plt.ylabel('Bottles sold')
+plt.xticks(rotation=45)
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+
+# Show the plot
+plt.show()
+```
+
+That's nice, but can we add an uncertainty quantification layer with conformal prediction to get a nice prediction interval? 🤩
+
+Yes, but "what do we say to the god of death?"
+
+![](img/got_not_to_day.gif){fig-align="center"}
 
 ## About the polar bear in the header
 
@@ -1349,3 +1423,4 @@ It's the *Bonjour* Bear, you can read more about the bear in [Know Your Meme](ht
 [^13]: Please note that this is not a traditional exporter block; it could be a custom block. I chose the exporter type because it interacts with the local database and creates the table, even though no data is exported in an explicit manner.
 [^14]: Free Bird's guitar solo starts playing in the background 🎸🎶🎶.
 [^15]: If you've had the pleasure to work with geospatial analysis before, you probably already know that CRSs are always awfully documented (i.e., not documentation at all). So, working with coordinates of less standard regions is a painful process full of guesses.
+[^16]: It is more to illustrate that DuckDB can be the source that feeds different systems. We already checked R, and we're continuing with Python. You can follow with Power BI or Tableau if you want :)
