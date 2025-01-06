@@ -1255,15 +1255,15 @@ After we have created a connection in Python, we can query the data we need for 
 #| label: query_data_for_prediction
 
 query_liquors_sales = """
-SELECT 
-    DATE_TRUNC('month', date) AS year_month,
-    MONTHNAME(year_month) AS month,
-    liquor_type,
-    SUM(sale_bottles) AS bottles_sold
-FROM iowa_liquor_sales
-WHERE YEAR(date) < 2020
-GROUP BY year_month, liquor_type
-ORDER BY year_month;
+  SELECT 
+      DATE_TRUNC('month', date) AS year_month,
+      MONTHNAME(year_month) AS month,
+      liquor_type,
+      SUM(sale_bottles) AS bottles_sold
+  FROM iowa_liquor_sales
+  WHERE YEAR(date) < 2020
+  GROUP BY year_month, liquor_type
+  ORDER BY year_month;
 """
 
 data_df = conn_py.sql(query_liquors_sales).df()
@@ -1297,8 +1297,8 @@ Next, we will organize our data according to the time series structure. Remember
 #| label: organize_and_split_data_time_series
 
 # Filter the data to include only rows for training and testing
-pivoted_data['year_month'] = pd.to_datetime(pivoted_data['year_month'])
-pivoted_data = pivoted_data.sort_values(by='year_month')  # <1>
+pivoted_data['year_month'] = pd.to_datetime(pivoted_data['year_month']) # <1>
+pivoted_data = pivoted_data.sort_values(by='year_month')                # <1>
 
 # Define target (Rum) and features (all other columns except year_month and Rum)
 target = 'Rum' # <2>
@@ -1335,8 +1335,8 @@ X_train_encoded = pd.DataFrame(encoded_months_train, columns=month_columns, inde
 X_test_encoded  = pd.DataFrame(encoded_months_test, columns=month_columns, index=X_test.index)   # <2>
 
 # Drop the original 'month' column and add the encoded columns
-X_train = X_train.drop(columns=['month']).join(X_train_encoded)
-X_test  = X_test.drop(columns=['month']).join(X_test_encoded)
+X_train = X_train.drop(columns=['month']).join(X_train_encoded) # <3>
+X_test  = X_test.drop(columns=['month']).join(X_test_encoded)   # <3>
 ```
 1. Apply one-hot encoding to the `month` variable.
 2. Replace the original `month` column with the one-hot encoded columns.
@@ -1448,7 +1448,7 @@ plt.show()
 ```
 We see that the ground truth falls within our confidence interval; we can also compare our prediction with the ground truth (consider that the ground truth won't be present in real life since that period hasn't happened). So you can now go with your stakeholders and present this chart so they can organize their rum orders for that year's holiday season. 
 
-That's great, but can we add another model for benchmarking? 🤩
+That's fantastic! But can we go even further downstream in our data flow by diving into stakeholder management, effective result presentation, and model monitoring? 🤩
 
 Yes, but "what do we say to the god of death?"
 
