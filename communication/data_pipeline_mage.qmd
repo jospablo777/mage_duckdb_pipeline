@@ -1477,6 +1477,24 @@ It's the *Bonjour* Bear, you can read more about the bear in [Know Your Meme](ht
 
 - Reis, J., & Housley, M. (2022). *Fundamentals of data engineering: Plan and build robust data systems*. O'Reilly Media.
 
+## Citation
+
+No citation is required, but if you found this project helpful, I'd greatly appreciate a mention! 😄
+
+
+## Acknowledgements
+
+To Little Mai...
+
+![Little Mai](img/Little_Mai_data_eng.png)
+
+## Contact
+
+Have questions, suggestions, or just want to connect? Feel free to reach out!
+
+- LinkedIn: [José Pablo Barrantes](https://www.linkedin.com/in/jose-barrantes/)
+- BlueSky: [doggofan77.bsky.social](https://bsky.app/profile/doggofan77.bsky.social)
+
 [^1]: According to their web page :)
 [^2]: There is no budget for a "scientist," and at this point in history, there is no such thing as a "data engineer" in [Latin America]{style="text-decoration: line-through;"} Iowa.
 [^3]: Please pretend that the tools existed at the time. I certainly wished for a data ecosystem like this, and I was in Latin America (Little Mai and I still are, and we're loving it 🪇🐑).
