@@ -1117,7 +1117,9 @@ month_sales_plot <- ggplot(bottle_sales_by_month, aes(x = month, y = monthly_bot
 plotly::ggplotly(month_sales_plot)
 ```
 
-The most popular liquors in Iowa seem to be whisky and vodka. The good news for Mezcal adepts is that it has been available in stores since 2016. Let's say we like mezcal and want to buy a bottle as a treat. However, as the chart shows, it is not the most popular drink, so now we want to know where to buy a bottle. Our quest will begin with a query to our DuckDB. Since this chart is interactive, you can zoom in to examine it further; to zoom out, double-click on the chart.
+Since this chart is interactive, you can zoom in to examine it further; to zoom out, double-click on the chart.
+
+The most popular liquors in Iowa seem to be whisky and vodka. The good news for Mezcal adepts is that it has been available in stores since 2016. Let's say we like mezcal and want to buy a bottle as a treat. However, as the chart shows, it is not the most popular drink, so now we want to know where to buy a bottle. Our quest will begin with a query to our DuckDB. 
 
 For this query, we will use a Common Table Expression (CTE) to retrieve the latest record for each store. We also filter the data to include only records from 2024 onward, where a geolocation is available, and the invoice corresponds to a mezcal purchase. Since the CTE ranks records by the most recent purchases, we can easily select the first record for each store in the main query.
 
@@ -1231,7 +1233,6 @@ You start by setting up your Python environment for this job. R is undoubtedly n
 import duckdb
 import pandas as pd
 from sktime.forecasting.compose import make_reduction
-from sktime.forecasting.model_selection import temporal_train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import OneHotEncoder
@@ -1247,7 +1248,7 @@ With your prelude ready, we continue by establishing a connection with our local
 conn_py = duckdb.connect("../data/iowa_liquor.duckdb", read_only=True)
 ```
 
-After we have our connection in Python, we can query the data we will need for the model.
+After we have created a connection in Python, we can query the data we need for the model.
 
 ```{python}
 #| label: query_data_for_prediction
@@ -1270,70 +1271,95 @@ data_df.head(5)
 
 ```
 
-Since we are working with time series data, we will need to reshape our data
+We can write the query as a docstring and then pass it to the `.sql()` command. Also, notice that we get our query results as a Pandas data frame with the `.df()` at the end.
+
+Since we are working with time series data, we will need to reshape our data.
 
 ```{python}
-pivoted_data = data_df.pivot(index=['year_month', 'month'], columns='liquor_type', values='bottles_sold').reset_index()
+#| label: reshape_data
 
-# Fill missing values (just in case)
+pivoted_data = data_df.pivot(index   = ['year_month', 'month'], 
+                             columns = 'liquor_type', 
+                             values  = 'bottles_sold').reset_index()
+
+# Fill missing values
 pivoted_data = pivoted_data.fillna(0)
 
 pivoted_data.head(5)
 ```
 
+Here, we pivoted in a wider shape our base data frame and created a new time series column for each liquor type, leaving in place the columns `year_month` and `month`. We also fill the missing values with zeroes. For example, remember that we started recording official mezcal sales in 2016, meaning that the `NaN` at the beginning of the `Mezcal` column will be filled with zeroes.
+
+Next, we will organize our data according to the time series structure. Remember that **the order of our observations matters** in this kind of data. Also we will split our data in two sets, one for training, another for testing.
+
 ```{python}
+#| label: organize_and_split_data_time_series
+
 # Filter the data to include only rows for training and testing
 pivoted_data['year_month'] = pd.to_datetime(pivoted_data['year_month'])
-pivoted_data = pivoted_data.sort_values(by='year_month')  # Ensure chronological order
+pivoted_data = pivoted_data.sort_values(by='year_month')  # <1>
 
 # Define target (Rum) and features (all other columns except year_month and Rum)
-target = 'Rum'
-features = [col for col in pivoted_data.columns if col not in ['year_month', 'Rum']]
+target = 'Rum' # <2>
+features = [col for col in pivoted_data.columns if col not in ['year_month', 'Rum']] # <2>
 
 # Split into train and test
-y = pivoted_data[target]  # Target variable
-X = pivoted_data[features]  # Features
+y = pivoted_data[target]    # <3>
+X = pivoted_data[features]  # <3>
 
 # Define test period (last two quarters of 2019)
-train_cutoff = pivoted_data['year_month'] < '2019-07-01'
-test_cutoff = ~train_cutoff
+train_cutoff = pivoted_data['year_month'] < '2019-07-01' # <4>
+test_cutoff = ~train_cutoff                              # <4>
 
-X_train, X_test = X[train_cutoff], X[test_cutoff]
-y_train, y_test = y[train_cutoff], y[test_cutoff]
+X_train, X_test = X[train_cutoff], X[test_cutoff] # <5>
+y_train, y_test = y[train_cutoff], y[test_cutoff] # <5>
 ```
+1. Ensure the data is in chronological order.
+2. Identify the target variable and the features.
+3. Separate the target variable from the features.
+4. Define a test period, which in this case will be the last two quarters of 2019. The `train_cutoff` and `test_cutoff` objects are boolean Pandas series used to filter the data.
+5. Split the data into training and testing datasets.
+
+With our disjoint sets ready, we can continue encoding our categorical `month` variable using the one-hot encoding method.
 
 ```{python}
-# One-hot encode the month feature
-encoder = OneHotEncoder(sparse_output=False, drop='first')  # Updated argument name
-encoded_months_train = encoder.fit_transform(X_train[['month']])
-encoded_months_test  = encoder.transform(X_test[['month']])
+#| label: one_hot_encoding_month
 
-# Replace the original 'month' column with encoded columns
-month_columns   = encoder.get_feature_names_out(['month'])
-X_train_encoded = pd.DataFrame(encoded_months_train, columns=month_columns, index=X_train.index)
-X_test_encoded  = pd.DataFrame(encoded_months_test, columns=month_columns, index=X_test.index)
+encoder = OneHotEncoder(sparse_output=False, drop='first')       # <1>
+encoded_months_train = encoder.fit_transform(X_train[['month']]) # <1>
+encoded_months_test  = encoder.transform(X_test[['month']])      # <1>
+
+month_columns   = encoder.get_feature_names_out(['month']) # <2>
+X_train_encoded = pd.DataFrame(encoded_months_train, columns=month_columns, index=X_train.index) # <2>
+X_test_encoded  = pd.DataFrame(encoded_months_test, columns=month_columns, index=X_test.index)   # <2>
 
 # Drop the original 'month' column and add the encoded columns
 X_train = X_train.drop(columns=['month']).join(X_train_encoded)
 X_test  = X_test.drop(columns=['month']).join(X_test_encoded)
 ```
+1. Apply one-hot encoding to the `month` variable.
+2. Replace the original `month` column with the one-hot encoded columns.
+3. Remove the original `month` column and integrate the encoded columns into the dataset.
+
+With the months now encoded in our feature sets (`X`), we are ready to train the model. Since this is a forecasting problem, additional steps are required to adapt our regression model. We will use the [`make_reduction`](https://www.sktime.net/en/latest/api_reference/auto_generated/sktime.forecasting.compose.make_reduction.html) function from [`sktime`](https://www.sktime.net/en/stable/), a machine learning framework for time series, to transform a simple estimator—`RandomForestRegressor` in this case—into a forecaster capable of handling time series data.
 
 ```{python}
+#| label: forecaster_train
 #| warning: false
 
 # Define the forecaster
 forecaster = make_reduction(
-    RandomForestRegressor(random_state=42), 
+    RandomForestRegressor(random_state=42), # Scikit-learn regression model
     strategy="recursive", 
     window_length=6  # Use 6 months of past data
 )
 
 # Fit the forecaster
-forecaster.fit(y_train, X=X_train)
+forecaster.fit(y=y_train, X=X_train)
 ```
 
+First the forecaster is instantiated, then we train it with the `fit` function. With our learned model at hand, now we can move to the forecasting. So, let's forecast the rum sales:
 
-Forecast rum sales:
 ```{python}
 # Define the forecasting horizon
 fh = list(range(1, len(y_test) + 1))  # Forecast horizon matches test data length
