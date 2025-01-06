@@ -1273,13 +1273,10 @@ data_df.head(5)
 Since we are working with time series data, we will need to reshape our data
 
 ```{python}
-pivoted_data = data_df.pivot(index='year_month', columns='liquor_type', values='bottles_sold').reset_index()
+pivoted_data = data_df.pivot(index=['year_month', 'month'], columns='liquor_type', values='bottles_sold').reset_index()
 
 # Fill missing values (just in case)
 pivoted_data = pivoted_data.fillna(0)
-
-# Add the `month` as a categorical feature
-pivoted_data['month'] = pd.to_datetime(pivoted_data['year_month']).dt.month_name()
 
 pivoted_data.head(5)
 ```
