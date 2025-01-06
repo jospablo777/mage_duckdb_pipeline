@@ -1233,6 +1233,7 @@ You start by setting up your Python environment for this job. R is undoubtedly n
 import duckdb
 import pandas as pd
 from sktime.forecasting.compose import make_reduction
+from sktime.forecasting.conformal import ConformalIntervals  
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import OneHotEncoder
@@ -1354,26 +1355,41 @@ forecaster = make_reduction(
     window_length=6  # Use 6 months of past data
 )
 
-# Fit the forecaster
-forecaster.fit(y=y_train, X=X_train)
+# Wrap the forecaster with ConformalIntervals
+conformal_forecaster = ConformalIntervals(forecaster)
+
+# Fit the conformal forecaster
+conformal_forecaster.fit(y_train, X=X_train)
 ```
 
-First the forecaster is instantiated, then we train it with the `fit` function. With our learned model at hand, now we can move to the forecasting. So, let's forecast the rum sales:
+First, the forecaster is instantiated, and then we wrap it into the `ConformalIntervals` class to get a conformal predictor, this way we will be able also to predict a nice confidence interval, adding an extra layer of uncertainty quantification for our predictions. Then, we train it with the `fit` function. With our learned model at hand, we can now move to forecasting. So, let's predict the rum sales:
 
 ```{python}
+#| label: prediction_and_interval
+
 # Define the forecasting horizon
 fh = list(range(1, len(y_test) + 1))  # Forecast horizon matches test data length
 
-# Forecast
-y_pred = forecaster.predict(fh, X=X_test)
+# Point forecasts
+y_pred = conformal_forecaster.predict(fh=fh, X=X_test)
+
+# Predict confidence intervals
+pred_int = conformal_forecaster.predict_interval(fh=fh, X=X_test, coverage=0.9)
 
 # Print results
-print("Forecasted Rum Sales for the last two quarters of 2019:")
+print("Forecasted rum sales for the last two quarters of 2019:")
 print(y_pred)
+
+print("\n")
+print("Forecasted rum sales confidence interval (90% coverage) for the last two quarters of 2019:")
+print(pred_int)
 ```
 
-Evaluate
+Here is the predicted output for the last two 2019 quarters. Let's evaluate the model to see how well it performed against the observed ground truth.
+
 ```{python}
+#| label: evaluate_model
+
 # Evaluate the forecast
 mae = mean_absolute_error(y_test, y_pred)
 mse = mean_squared_error(y_test, y_pred)
@@ -1382,15 +1398,30 @@ print(f"Mean Absolute Error (MAE): {mae}")
 print(f"Mean Squared Error (MSE): {mse}")
 ```
 
+These numbers don't tell us much on their own, and it would be ideal to compare them against the MAE and MSE of another model. However, we won't invest more time in that. Feel free to train a different model to make the comparison!
+
+Next, a key step in evaluating the model is visualizing how its forecasts compare with the observed ground truth. To achieve this, we create a plot of our forecast:
+
 ```{python}
+#| label: plot_prediction
+
+# Extract CI
+y_pred_lower = pred_int[('Rum', 0.9, 'lower')].values
+y_pred_upper = pred_int[('Rum', 0.9, 'upper')].values
+
 # Combine actual and predicted data
 results_2019 = pivoted_data[pivoted_data['year_month'].dt.year == 2019][['year_month', 'Rum']].copy()
 results_2019['Forecast'] = None
+results_2019['Lower'] = None
+results_2019['Upper'] = None
 
-# Assign forecast values for the test period
-results_2019.loc[results_2019['year_month'] >= '2019-07-01', 'Forecast'] = y_pred.values
+# Assign forecast values and prediction intervals for the test period
+test_period = results_2019['year_month'] >= '2019-07-01'
+results_2019.loc[test_period, 'Forecast'] = y_pred.values
+results_2019.loc[test_period, 'Lower'] = y_pred_lower
+results_2019.loc[test_period, 'Upper'] = y_pred_upper
 
-# Plot the results
+# Create figure
 plt.figure(figsize=(10, 6))
 
 # Plot actual Rum sales
@@ -1399,27 +1430,42 @@ plt.plot(results_2019['year_month'], results_2019['Rum'], label='Actual rum sale
 # Plot forecasted Rum sales
 plt.plot(results_2019['year_month'], results_2019['Forecast'], label='Forecasted rum sales', linestyle='--', marker='x', color='#b1d25a')
 
-# Highlight the test period
-plt.axvline(x=pd.to_datetime('2019-07-01'), color='#ed7c65', linestyle='--', label='Start of test period')
+# Plot prediction intervals as separate lines for debugging
+plt.plot(results_2019.loc[test_period, 'year_month'], results_2019.loc[test_period, 'Lower'], label='Lower bound', linestyle=':', color='#b1d25a')
+plt.plot(results_2019.loc[test_period, 'year_month'], results_2019.loc[test_period, 'Upper'], label='Upper bound', linestyle=':', color='#b1d25a')
 
-# Add titles and labels
-plt.title('Actual vs. forecasted rum sales in 2019')
+# Highlight the test period
+plt.axvline(x=pd.to_datetime('2019-07-01'), color='#ed7c65', linestyle='--', label='Start of forecast period')
+
+plt.title('Forecast of rum bottles sold for 2019 Q3 and Q4')
 plt.xlabel('Month')
 plt.ylabel('Bottles sold')
 plt.xticks(rotation=45)
 plt.legend()
 plt.grid(True)
 plt.tight_layout()
-
-# Show the plot
 plt.show()
 ```
+We see that the ground truth falls within our confidence interval; we can also compare our prediction with the ground truth (consider that the ground truth won't be present in real life since that period hasn't happened). So you can now go with your stakeholders and present this chart so they can organize their rum orders for that year's holiday season. 
 
-That's nice, but can we add an uncertainty quantification layer with conformal prediction to get a nice prediction interval? 🤩
+That's great, but can we add another model for benchmarking? 🤩
 
 Yes, but "what do we say to the god of death?"
 
 ![](img/got_not_to_day.gif){fig-align="center"}
+
+
+And there you have it: we have used our DuckDB data to create a predictive model!
+
+![](img/ml_done_data_lifecycle_logos.png)
+
+At this point, you must be overwhelmed and tired, but that's because we have worked and implemented a whole data life cycle. Congratulation!
+
+## Recap
+
+## Final remarks
+
+## What was left
 
 ## About the polar bear in the header
 
