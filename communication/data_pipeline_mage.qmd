@@ -1436,7 +1436,7 @@ plt.plot(results_2019['year_month'], results_2019['Rum'], label='Actual rum sale
 # Plot forecasted Rum sales
 plt.plot(results_2019['year_month'], results_2019['Forecast'], label='Forecasted rum sales', linestyle='--', marker='x', color='#b1d25a')
 
-# Plot prediction intervals as separate lines for debugging
+# Plot prediction intervals as separate lines
 plt.plot(results_2019.loc[test_period, 'year_month'], results_2019.loc[test_period, 'Lower'], label='Lower bound', linestyle=':', color='#b1d25a')
 plt.plot(results_2019.loc[test_period, 'year_month'], results_2019.loc[test_period, 'Upper'], label='Upper bound', linestyle=':', color='#b1d25a')
 
