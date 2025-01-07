@@ -1474,6 +1474,7 @@ During this project, we did a lot. We started analyzing the source of our data a
 The data landscape is vast, with many appliances available for every task. In this project, we explored several modern tools to address a data engineering problem. However, it’s important not to limit yourself to these specific libraries. Each issue may require a different set of tools, but the key is to focus on the foundational principles of data engineering. The technical stack can be chosen later, but the core concepts will pave the way to finding practical solutions to your challenges.
 
 Without more, I hope here you have learned a little and that you can apply some of these things in your tasks :)
+
 ## About the polar bear in the header
 
 It's the *Bonjour* Bear, you can read more about the bear in [Know Your Meme](https://knowyourmeme.com/memes/bonjour-bear) :)
