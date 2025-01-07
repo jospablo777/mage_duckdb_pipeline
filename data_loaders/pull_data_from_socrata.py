@@ -99,7 +99,7 @@ def test_output(output, *args) -> None:
     Validates the output of data pulling block.
     """
     assert output is not None, 'The output is undefined'
-    assert isinstance(output, pl.DataFrame), "The output is not a a Polars data frame"
+    assert isinstance(output, pl.DataFrame), "The output is not a Polars data frame"
     assert len(output) > 0, "The data frame is empty"
 
 @test
@@ -107,7 +107,7 @@ def test_invoice_line_no_not_null_output(output, *args) -> None:
     """
     Test the new invoice_line_no column contains no nulls.
     """
-    assert output["invoice_line_no"].is_null().sum() == 0, "The invoice_line_no column contain null values, it shouldn't"
+    assert output["invoice_line_no"].is_null().sum() == 0, "The invoice_line_no column contains null values, it shouldn't"
 
 @test
 def test_date_not_null_output(output, *args) -> None:

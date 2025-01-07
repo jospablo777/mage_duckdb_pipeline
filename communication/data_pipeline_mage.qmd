@@ -241,7 +241,7 @@ In this tutorial, we will adopt the writing style of [*The Rust Programming Lang
 
 ### Writing our first Mage blocks
 
-Here we will implement our first blocks, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to our already created pipeline, `socrata_iowa_liquor_pipeline`. But if you want to follow this tutorial from scratch, you can also create a new pipeline, for example, `socrata_iowa_liquor_pipeline_from_scratch`, and continue working from there. With the intuitive Mage UI, it will be easy for you to create this new pipeline.
+Here we will implement our first blocks, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to our already created pipeline, `socrata_iowa_liquor_pipeline`. If you want to follow this tutorial from scratch, you can create a fresh pipeline (for instance, `socrata_iowa_liquor_pipeline_from_scratch`) and continue from there. With the intuitive Mage UI, it will be easy for you to create this new pipeline.
 
 Our first block:
 
@@ -596,8 +596,8 @@ Filename: [`data_loaders/pull_data_from_socrata.py`](https://github.com/jospablo
 
 @data_loader
 def load_data_from_api(schema,
-                       last_year_in_local_db,
                        records_per_year,
+                       last_year_in_local_db,
                        *args, **kwargs):
 
 # -- snip --
@@ -662,7 +662,7 @@ def test_output(output, *args) -> None:
     Validates the output of data pulling block.
     """
     assert output is not None, 'The output is undefined'
-    assert isinstance(output, pl.DataFrame), "The output is not a a Polars data frame"
+    assert isinstance(output, pl.DataFrame), "The output is not a Polars data frame"
     assert len(output) > 0, "The data frame is empty" # <1>
 
 @test # <2>
@@ -670,7 +670,7 @@ def test_invoice_line_no_not_null_output(output, *args) -> None:
     """
     Test the new invoice_line_no column contains no nulls.
     """
-    assert output["invoice_line_no"].is_null().sum() == 0, "The invoice_line_no column contain null values, it shouldn't" # <2>
+    assert output["invoice_line_no"].is_null().sum() == 0, "The invoice_line_no column contains null values, it shouldn't" # <2>
 
 @test # <3>
 def test_date_not_null_output(output, *args) -> None:
@@ -1034,7 +1034,7 @@ You can continue with this until your local data is up to date. Remember that we
 
 ### Should I manually run the pipeline whenever I need to update the data?
 
-Running the pipeline in your terminal might be an option, but not the most appealing one, depending on your use case. For instance, the Iowa Liquor data set is updated once per month with the new data available on the 1st of each month, according to its [documentation.](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) Hence, it makes sense to run an update job once per month. We can configure a trigger for this, and it is very easy to do, so go review Mage's [documentation](https://docs.mage.ai/orchestration/triggers/configure-triggers-in-code) if you are in the need.
+Running the pipeline in your terminal might be an option, but not the most appealing one, depending on your use case. For instance, the Iowa Liquor data set is updated once per month with the new data available on the 1st of each month, according to its [documentation](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data). Therefore, it makes sense to run an update job once per month. We can configure a trigger for this, and it is very easy to do, so go review Mage's [documentation](https://docs.mage.ai/orchestration/triggers/configure-triggers-in-code) if you are in the need.
 
 ![Progress we've made so far.](img/serving_done_data_lifecycle_logos.png)
 
