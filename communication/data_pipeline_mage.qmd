@@ -1474,8 +1474,6 @@ At this point, you must be overwhelmed and tired, but that's because we have wor
 
 ## Final remarks
 
-## What was left
-
 ## About the polar bear in the header
 
 It's the *Bonjour* Bear, you can read more about the bear in [Know Your Meme](https://knowyourmeme.com/memes/bonjour-bear) :)
