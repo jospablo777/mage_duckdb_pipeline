@@ -286,7 +286,7 @@ def test_output(output, *args) -> None:
     assert output is not None, 'The output is undefined' # <3>
 ```
 1. **Imports:** block's prelude.
-2. **Main functionality:** since this is a data loader I has the `@data_loader` decorator on top.
+2. **Main functionality:** since this is a data loader it has the `@data_loader` decorator on top.
 3. **Test for data validation:** accepts the output data of the block. If any of the tests fail, the block execution will also fail.
 
 Mage provides a variety of templates designed to guide you and save time. These templates were incredibly helpful when we[^6] first started building data pipelines. Notices the structure of a block, it is composed by three sections: library imports, a function, and a test. The function handles the main task of the block, while the test ensures that the block's main functionality works as intended.
@@ -342,21 +342,21 @@ def test_output(dictionary, *args) -> None:
 1. **Polars:** used for data manipulation and type mapping throughout the project.
 2. **HTTP library:** `requests` is used to send HTTP requests to the API.
 3. **Loader decorator:** the `@data_loader` decorator marks the function as a Mage data loader block.
-4. **Test decorator:** the `@test decorator` defines a test for validating the function's output.
+4. **Test decorator:** the `@test` decorator defines a test function for validating the output.
 5. **Socrata to Polars type mapping:** the `SODA_TO_POLARS` dictionary maps Socrata data types to corresponding Polars types, ensuring compatibility.
-6. **Function decoration:** the loader function `load_data_schema_from_api` is decorated with `@data_loader` to integrate it into the Mage pipeline.
+6. **Function decoration:** the loader function `load_data_schema_from_api` is decorated with `@data_loader` to integrate it into the Mage pipeline. It is important to include the decorator to power the function we define with Mage functionalities.
 7. **Endpoint definition:** the endpoint URL is dynamically generated using the global variables `DOMAIN` and `DATASET_ID`. This is where the schema metadata is fetched.
 8. **Dictionary comprehension:** the `schema` dictionary maps column names to their corresponding Polars types, based on the `SODA_TO_POLARS` dictionary. Unrecognized types default to `Utf8`.
 9. **Exclusion columns:** columns with names starting with `:@computed_` are excluded from the schema.
-10. **Test function:** the `@test` decorator validates the loader's output, ensuring it is a non-empty dictionary of the correct type.
+10. **Test function:** the test validates the loader's output, ensuring it is a non-empty dictionary of the correct type. Remember to include the `@test` decorator so the test works as Mage intended.
 
-The primary goal of the `get_schema_from_metadata` block is to retrieve data type information to standardize batch ingestion. While Polars can infer data types based on the content they read, each batch may differ in structure. This inconsistency can lead to errors and prevent us from merging batches later. We can resolve this issue by specifying data types and ensuring a consistent schema across all batches.
+The primary goal of the `get_schema_from_metadata` block is to retrieve data type information to standardize batch ingestion. While Polars can infer data types based on the content it reads, each batch may differ in structure. This inconsistency can lead to errors and prevent us from merging batches later. We can resolve this issue by specifying data types and ensuring a consistent schema across all batches.
 
 Please notice that we use Polars for data transformation and manipulation. Compared with Pandas, Polars offers better performance and scalability, making it a more cost-effective choice for production systems. This [case study](https://pola.rs/posts/case-check-technology/) demonstrates that Polars can reduce computational costs, making it a good choice for projects that may eventually transition to production. Polars is a mature and robust library with extensive capabilities, making it an excellent choice for this project.
 
 We can illustrate how the Mage flow operates using our first block. Initially, the block performs its main task—fetching data from an API in this example. The instructions for this task are defined in the block's primary function, which is identified by the `@data_loader` decorator. Once the main task is completed, its output is passed to the tests, marked with the `@test` decorator. If all tests are successful, the output is forwarded to the next block in the stream.
 
-When you first looked at @fig-concrete-project-outline, you might have wondered why storage spans the entire process and why Apache Arrow and Parquet are included in the storage block alongside DuckDB. This is because data storage underpins every major stage, with data being stored multiple times throughout its life cycle. Mage uses PyArrow to handle data serialization and deserialization between blocks during these storage steps[^7]. For disk storage, PyArrow serializes the data into the Parquet format. For more details, you can check the the [documentation](https://docs.mage.ai/guides/blocks/polars).
+When you first looked at @fig-concrete-project-outline, you might have wondered why storage spans the entire process and why Apache Arrow and Parquet are included in the storage block alongside DuckDB. This is because data storage underpins every major stage, with data being stored multiple times throughout its life cycle. Mage uses PyArrow to handle data serialization and deserialization between blocks during these storage steps[^7]. For disk storage, PyArrow serializes the data into the Parquet format. For more details, you can check Mage's [documentation](https://docs.mage.ai/guides/blocks/polars).
 
 Below is an overview of how Mage blocks function:
 
@@ -510,9 +510,9 @@ In this header, we receive all the necessary information to consume the upstream
 
 The parameter names (`data`, `data_2`, `data_3`) are arbitrary, allowing you to choose names that best suit your function. However, what matters most is the **positional order** of the parameters. Specifically:
 
-- The first parameter corresponds to the output of `get_schema_from_metadata.`
-- The second parameter corresponds to `soda_records_per_year.`
-- The third parameter corresponds to `check_local_db.`
+- The first parameter corresponds to the output of `get_schema_from_metadata`.
+- The second parameter corresponds to `soda_records_per_year`.
+- The third parameter corresponds to `check_local_db`.
 
 With this in mind, we can proceed to define the content of this block. Since there is a lot to cover, we'll break it down into three sections: the imports, the loader function, and the tests. Let's start with the dependencies for this block:
 
@@ -633,21 +633,21 @@ def load_data_from_api(schema,
 
     return all_pulled_data # <7> 
 ```
-1. First we have to define a function that will handle the requests. It receives an URL, makes the GET request, and returns a Polars data frame with the data. In case there is an error in our request, it also handles that.
+1. First we have to define a function that will handle the requests. It receives an URL, makes the `GET` request, and returns a Polars data frame with the data. In case there is an error in our request, it also handles that.
 2. Initializes a thread pool with a maximum of three workers (`max_workers = 3`), allowing up to three API requests to be executed concurrently. This will help to speed up the data retrieval. The `with` statement is used for context management, ensuring the thread pool is properly shut down once all threads have completed their work.
-3. Here were we submit tasks to the thread pool. A dictionary is created using comprehension. The `executor.submit(...)` method schedules the `fetch_batch` function to run in a separate thread with `url` as its argument, returning a `Future` object. The resulting `futures` dictionary maps these Future objects to their corresponding URLs.
+3. Here, we submit tasks to the thread pool. A dictionary is created using comprehension. The `executor.submit(...)` method schedules the `fetch_batch` function to run in a separate thread with `url` as its argument, returning a `Future` object. The resulting `futures` dictionary maps these Future objects to their corresponding URLs.
 4. To monitor progress, the code iterates over the `Future` objects as they complete (using `as_completed`) and tracks progress with `tqdm`, providing real-time feedback to the user.
 5. Retrieves the results, for each completed task, `future.result()` is called to retrieve the result of the `fetch_batch` function. This method waits for the task to finish and returns the resulting Polars data frame.
 6. All data frames are merged into a single one.
 7. Finally, the merged data frame containing all the requested data is returned.
 
-So, this function utilizes `ThreadPoolExecutor` to submit API requests for all the URLs in `requests_list`. Tasks are executed in parallel based on the number of workers specified. Progress is monitored using `tqdm,` which updates the progress bar in real-time. The result (a Polars data frame) is retrieved and validated for each completed task. Once all tasks are complete, the individual data frames are merged into a single data frame, which is then returned. The process is illustrated in the following chart.
+So, this function utilizes `ThreadPoolExecutor` to submit API requests for all the URLs in `requests_list`. Tasks are executed in parallel based on the number of workers specified. Progress is monitored using `tqdm,` which updates the progress bar in real-time. The result (a Polars data frame) is retrieved and validated for each completed task. Once all tasks are complete, the individual data frames are merged into a single one, which is then returned. The process is illustrated in the following chart.
 
 ![Asynchronous data fetching](img/asynchronous_fetch.png)
 
 ### Testing
 
-With the main functionality complete, ensuring that the loader runs reliably is essential, even when the code requires adjustments[^9]. To achieve this, we write tests to verify its behavior. Additionally, to maintain the best data quality in our pipeline, these tests also focus on ensuring the integrity and consistency of the data.
+With the main functionality complete, ensuring that the loader runs reliably is essential, and equally important, to run automatic tests after making adjustments to the code[^9]. To achieve this, we write tests to verify its behavior. Additionally, to maintain the best data quality in our pipeline, these tests also focus on ensuring the integrity and consistency of the data.
 
 Let's review the final part of our block, which consists of three tests. These tests are designed to validate certain expectations of the data, such as ensuring no null values in specific columns, and to verify the overall integrity of the data.
 
@@ -688,7 +688,7 @@ def test_date_not_null_output(output, *args) -> None:
 
 When writing tests for your blocks, always include the `@test` decorator. This informs Mage to treat the functions as tests. In these examples, we verified the basic integrity of the resulting data frame and enforced specific rules for two columns. If everything went smoothly, you should see a confirmation message for each test that passed after running the block.
 
-![](img/ingestion_done_data_lifecycle_logos.png)
+![Progress we've made so far.](img/ingestion_done_data_lifecycle_logos.png)
 
 And we just finished implementing the data ingestion part of our pipeline! :D
 
@@ -698,11 +698,11 @@ With the retrieved data in hand, we now focus on transforming it. As illustrated
 
 ### Have present the bussiness logic
 
-The dataset offers a wealth of information, including product descriptions and geolocation points, providing ample opportunities for deeper insights and analysis. To enhance this further, we will create new variables that reveal additional business insights, enabling us to answer more interesting questions. We’ve organized the transformations into the following business-logic blocks:
+The dataset offers a wealth of information, such as product descriptions and geolocation points, providing ample opportunities for deeper insights and analysis. To enhance this further, we will create new variables that reveal additional business insights, enabling us to answer more interesting questions. We've organized the transformations into the following business-logic blocks:
 
 1. `product_transformations`: generates general product descriptions, such as liquor type or packaging size.
 2. `sales_and_price_related_metrics`: creates variables like profits and costs.
-3. `volume_based_features`: develops features related to the liquid volume of sales.
+3. `volume_based_features`: develops features related to the liquid volume (Liters) of sales.
 4. `time_based_features`: generates temporal variables for time-based analysis.
 
 ### Let's transform our data
@@ -756,7 +756,7 @@ def transform(data, *args, **kwargs):
 2. Determine whether the product is considered premium based on its individual price.
 3. Classify the product by size.
 
-In this context, `data` represents the upstream `DataFrame` passed to this block by `pull_data_from_socrata`. It is the first parameter of the `transform` transformer. The Polars transformation begins with the `with_columns` method, which is used to add or replace columns in the DataFrame.
+In this context, `data` represents the upstream `DataFrame` passed to this block by `pull_data_from_socrata`. It is the first parameter of the `transform` transformer. The Polars transformation begins with the `with_columns` method, which is used to add or replace columns in the `DataFrame`.
 
 Within `with_columns`, we define the transformations. To create the first new variable, we use the `pl.when()` function to start a conditional statement. To reference a column, we use the `pl.col()` function. If you are familiar with Pandas or `dplyr`, this might feel counterintuitive at first, but it works in a similar fashion—just pass the column name as a string, e.g., `pl.col("your_col")`.
 
@@ -803,19 +803,19 @@ def test_bottle_size_col(output, *args) -> None:
 3. Check the `is_premium` column's content and data type.
 4. Ensure the `bottle_size` column's content and data type are correct.
 
-Notice that each new variable has at least one associated test. While more detailed tests can be added later, these initial ones will suffice for now. And that’s essentially how a transformation block is structured. The next three transformation blocks follow a similar pattern, so I won’t explain them in detail, but feel free to review them as needed.
+Notice that each new variable has at least one associated test. While more detailed tests can be added later, these initial ones will suffice for now. And that's essentially how a transformation block is structured. The next three transformation blocks follow a similar pattern, so I won't explain them in detail, but feel free to review them as needed.
 
 - [`sales_and_price_related_metrics`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/sales_and_price_related_metrics.py)
 - [`volume_based_features`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/volume_based_features.py)
 - [`time_based_features`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/transformers/time_based_features.py)
 
-That concludes our data transformation step! Next, we’ll move on to storing our valuable data.
+That concludes our data transformation step! Next, we'll move on to storing our valuable data.
 
-![](img/transformation_done_data_lifecycle_logos.png)
+![Progress we've made so far.](img/transformation_done_data_lifecycle_logos.png)
 
 ## Persistent storage and serving
 
-With a robust method for retrieving and transforming our data, the next step is to store and query it efficiently. For this purpose, we’ll use DuckDB. But why choose DuckDB?
+With a robust method for retrieving and transforming our data, the next step is to store and query it efficiently. For this purpose, we'll use DuckDB. But why choose DuckDB?
 
 DuckDB is well-known for its in-memory data manipulation capabilities, but it also supports persistent storage with several compelling advantages. By using DuckDB's native storage format, we gain the following benefits:
 
@@ -846,7 +846,7 @@ if 'data_exporter' not in globals():
 1. We will use the `os` module in our tests.
 2. Python DuckDB client.
 
-We start with the imports—of course, we’ll need the DuckDB client. If you’ve been following this tutorial, you should have installed it along with the dependencies. Next, we define a query to create the table where we will store our data. This step is crucial to specify the data types for each column.
+We start with the imports—of course, we'll need the DuckDB client. If you've been following this tutorial, you should have installed it along with the dependencies. Next, we define a query to create the table where we will store our data. This step is crucial to specify the data types for each column.
 
 Another critical aspect is defining constraints for the table. Here, we specify that two columns cannot contain null values and designate `invoice_line_no` as the primary key. But is this necessary? If we aim to enforce data integrity and prevent duplication, the answer is yes.
 
@@ -1039,7 +1039,7 @@ You can continue with this until your local data is up to date. Remember that we
 
 Running the pipeline in your terminal might be an option, but not the most appealing one, depending on your use case. For instance, the Iowa Liquor data set is updated once per month with the new data available on the 1st of each month, according to the [documentation.](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) Hence, it makes sense to run an update job once per month. We can configure a trigger for this, and it is very easy to do, so go review Mage's [documentation](https://docs.mage.ai/orchestration/triggers/configure-triggers-in-code) if you are in the need.
 
-![](img/serving_done_data_lifecycle_logos.png)
+![Progress we've made so far.](img/serving_done_data_lifecycle_logos.png)
 
 And our data is ready to be served via SQL! We can continue with the pipeline's end goal: analytics and modeling.
 
@@ -1213,7 +1213,7 @@ leaflet(data = bottles_sold_per_type_0) %>%
 
 Great! Now, we have a map of the stores that recently ordered mezcal. We can look for the closest one and go there for our treat. You can also click the dot of your store of interest to get its name and address.
 
-![](img/analytics_done_data_lifecycle_logos.png)
+![Progress we've made so far.](img/analytics_done_data_lifecycle_logos.png)
 
 Now that we better understand our data, we can use our DuckDB to feed some algorithms and get predictive (machine learning) models.
 
@@ -1457,7 +1457,7 @@ Yes, but "what do we say to the god of death?"
 
 And there you have it: we have used our DuckDB data to create a predictive model!
 
-![](img/ml_done_data_lifecycle_logos.png)
+![Progress we've made so far.](img/ml_done_data_lifecycle_logos.png)
 
 At this point, you must be overwhelmed and tired, but that's because we have worked and implemented a whole data life cycle. Congratulation!
 
