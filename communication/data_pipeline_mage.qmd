@@ -6,7 +6,7 @@ include-in-header:
 author:
   name: "José P. Barrantes"
   url: "https://www.linkedin.com/in/jose-barrantes/"
-description: "GitHub Repo: [SODA to DuckDB](https://github.com/jospablo777/)"
+description: "GitHub Repo: [SODA to DuckDB](https://github.com/jospablo777/mage_duckdb_pipeline)"
 date: "`r Sys.Date()`"
 published-title: "Last updated"
 crossref:
