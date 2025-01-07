@@ -85,7 +85,7 @@ Let's say we work for a big chain of liquor stores located in the US, Iowa. Part
 
 ![](img/predictive_modeling_simpsons.png)
 
-To continue building our situation, let's imagine the year 2020—when the term “data engineer” was not as popular as it is today. You've just been hired as a data analyst[^2], and according to Google Trends, the term “data engineer” was only half as popular as it is now. Moreover, a closer look at the trend data from 2020 reveals that most searches for this term originated in tech hubs like California or Washington rather than in states like Iowa.
+To continue building our situation, let's imagine the year 2020—when the term "data engineer" was not as popular as it is today. You've just been hired as a data analyst[^2], and according to Google Trends, the term "data engineer" was only half as popular as it is now. Moreover, a closer look at the trend data from 2020 reveals that most searches for this term originated in tech hubs like California or Washington rather than in states like Iowa.
 
 ```{r}
 #| label: google_trends_data_eng
@@ -1362,7 +1362,7 @@ conformal_forecaster.fit(y_train, X=X_train)
 
 First, we instantiate the `forecaster`, which uses a `RandomForestRegressor` as its core model. Next, we wrap it in the ConformalIntervals class to create a conformal predictor. This allows us not only to make predictions but also to generate confidence intervals, adding an extra layer of uncertainty quantification to our forecasts. The hierarchical structure of the model can be inspected in the visualization displayed below the preceding code snippet.
 
-Once the model is set up, we train it using the `fit` function. With the trained model ready, we can proceed to forecasting. Now, let’s predict the rum sales:
+Once the model is set up, we train it using the `fit` function. With the trained model ready, we can proceed to forecasting. Now, let's predict the rum sales:
 
 ```{python}
 #| label: prediction_and_interval
@@ -1471,7 +1471,7 @@ At this point, you must be overwhelmed and tired, but that's because we have wor
 
 During this project, we did a lot. We started analyzing the source of our data and thinking about the best way to retrieve it. We coded a mechanism to fetch the data, transformed it with Polars, and then stored it on disk. Finally, we illustrated that the data we got is indeed helpful in answering real-life questions.
 
-The data landscape is vast, with many appliances available for every task. In this project, we explored several modern tools to address a data engineering problem. However, it’s important not to limit yourself to these specific libraries. Each issue may require a different set of tools, but the key is to focus on the foundational principles of data engineering. The technical stack can be chosen later, but the core concepts will pave the way to finding practical solutions to your challenges.
+The data landscape is vast, with many appliances available for every task. In this project, we explored several modern tools to address a data engineering problem. However, it's important not to limit yourself to these specific libraries. Each issue may require a different set of tools, but the key is to focus on the foundational principles of data engineering. The technical stack can be chosen later, but the core concepts will pave the way to finding practical solutions to your challenges.
 
 Without more, I hope here you have learned a little and that you can apply some of these things in your tasks :)
 
@@ -1492,7 +1492,7 @@ No citation is required, but if you found this project helpful, I'd greatly appr
 
 ## Acknowledgements
 
-To Little Mai, my home office manger and editor in chief of "Paws-On Data"
+To Little Mai, my home office manager and editor-in-chief of "Paws-On Data."
 
 ![Little Mai](img/Little_Mai_data_eng.png)
 
