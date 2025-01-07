@@ -1363,7 +1363,9 @@ conformal_forecaster = ConformalIntervals(forecaster)
 conformal_forecaster.fit(y_train, X=X_train)
 ```
 
-First, the forecaster is instantiated, and then we wrap it into the `ConformalIntervals` class to get a conformal predictor, this way we will be able also to predict a nice confidence interval, adding an extra layer of uncertainty quantification for our predictions. Then, we train it with the `fit` function. With our learned model at hand, we can now move to forecasting. So, let's predict the rum sales:
+First, we instantiate the `forecaster`, which uses a `RandomForestRegressor` as its core model. Next, we wrap it in the ConformalIntervals class to create a conformal predictor. This allows us not only to make predictions but also to generate confidence intervals, adding an extra layer of uncertainty quantification to our forecasts. The hierarchical structure of the model can be inspected in the visualization displayed below the preceding code snippet.
+
+Once the model is set up, we train it using the `fit` function. With the trained model ready, we can proceed to forecasting. Now, let’s predict the rum sales:
 
 ```{python}
 #| label: prediction_and_interval
@@ -1376,13 +1378,19 @@ y_pred = conformal_forecaster.predict(fh=fh, X=X_test)
 
 # Predict confidence intervals
 pred_int = conformal_forecaster.predict_interval(fh=fh, X=X_test, coverage=0.9)
+```
 
-# Print results
-print("Forecasted rum sales for the last two quarters of 2019:")
+Forecasted rum sales for the last two quarters of 2019:
+
+```{python}
+#| label: forecasted_rum_sales
 print(y_pred)
+```
 
-print("\n")
-print("Forecasted rum sales confidence interval (90% coverage) for the last two quarters of 2019:")
+Forecasted rum sales confidence interval (90% coverage) for the last two quarters of 2019:
+
+```{python}
+#| label: forecasted_interval_rum_sales
 print(pred_int)
 ```
 
