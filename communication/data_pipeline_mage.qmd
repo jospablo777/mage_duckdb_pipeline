@@ -55,7 +55,7 @@ Another advantage of gaining understanding—and hands-on experience—in data e
 
 ## About the tools
 
-In this project, we will use Mage as our data orchestrator. The tasks managed by the orchestrator will include data manipulation and transformation using Polars, as well as persistent storage with DuckDB.
+In this project, we will use Mage as our data orchestrator. The tasks the orchestrator manages will include data fetching, manipulation and transformation using Polars, and persistent storage with DuckDB.
 
 ### What are data orchestrators?
 
@@ -69,7 +69,7 @@ Returning to the data lifecycle diagram, we can land it in a more concrete way t
 
 ![The data lifecycle and a more concrete overview of what **we will implement** in this project. Modified from "Fundamentals of Data Engineering" by Reis & Housley (2022).](img/data_lifecycle_logos.png){#fig-concrete-project-outline}
 
-First, we will fetch the data from the Socrata Open Data API (SODA) through HTTP. After that, we will generate some extra variables of our interest with Polars, to finally store it in a DuckDB database we will consume for analytics and predictive modeling. All this is orchestrated with Mage.
+First, we will fetch the data from the Socrata Open Data API (SODA) through HTTP. After that, we will generate some extra variables of our interest with Polars, to finally store it in a DuckDB database. We will consume this database for analytics and predictive modeling. All this is orchestrated with Mage.
 
 ### Tools and resources overview:
 
@@ -84,7 +84,7 @@ We've chosen the [Iowa Liquor Sales](https://data.iowa.gov/Sales-Distribution/Io
 
 ## Our problem
 
-Let's say we work for a big chain of liquor stores in the US, Iowa. Part of the intelligence in your company is built upon the information made available through SODA API, and it feeds some of the dashboards the decision-makers consume. You also use it often to do research and predictive modeling. Some stakeholders have started complaining about the loading times of the dashboards, and you have also been a little frustrated with the time it takes to get the data to train your predictive models.
+Let's say we work for a big chain of liquor stores located in the US, Iowa. Part of the intelligence in your company is built upon the information made available through SODA API, and it feeds some of the dashboards the decision-makers consume. You also use it often to do research and predictive modeling. Some stakeholders have started complaining about the loading times of the dashboards, and you have also been a little frustrated with the time it takes to get the data to train your predictive models.
 
 ![](img/predictive_modeling_simpsons.png)
 
@@ -161,7 +161,7 @@ The `requirements.txt` file contains the libraries required for the project, wit
 mage start
 ```
 
-This will open a tab in our browser that looks like this:
+This will open a tab in our web browser that looks like this:
 
 ![Mage home UI.](img/mage_ui_main.png)
 
@@ -169,7 +169,7 @@ One of Mage's greatest strengths is its intuitive user interface. It allows us t
 
 ![Mage home UI left panel.](img/mage_ui_left_panel.png)
 
-After opening the pipeline, navigate to the Edit pipeline section in the left panel, identified by the </> symbol. This is where we can begin constructing our pipeline. Here, you will have the option to insert a block:
+After opening the pipeline, navigate to the Edit pipeline section in the left panel, identified by the `</>` symbol. This is where we can begin constructing our pipeline. Here, you will have the option to insert a block:
 
 ![Create block options.](img/create_block.png)
 
@@ -177,7 +177,7 @@ Our objective is to build the following pipeline using a series of different blo
 
 ![Pipeline we will implement in this projec.](img/pipeline_dag.png)
 
-Great! Now that our environment is set up and we've familiarized ourselves with Mage's user interface, we'll return to Mage shortly. But first, let's take a closer look at our data source: the [Iowa Liquor Sales](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) dataset.
+Great! Now that our environment is set up and we've familiarized ourselves with Mage's user interface, let's take a closer look at our data source: the [Iowa Liquor Sales](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) dataset. We'll return to Mage shortly.
 
 ## SODA API: our data source
 
@@ -193,7 +193,7 @@ The [dataset's documentation](https://dev.socrata.com/foundry/data.iowa.gov/m3tr
 https://data.iowa.gov/resource/m3tr-qhgy.csv
 ```
 
-The dataset documentation also informs us that, to date, it consists of more than 30 million rows. Now that we know the endpoint and the size of the data, we're ready to pull the data, right?
+The dataset documentation also informs us that, to date, it consists of more than 30 million rows and 24 variables. Now that we know the endpoint and the size of the data, we're ready to pull the data, right?
 
 A sensible approach would be to retrieve the data sequentially using the paging method described in the [SODA documentation](https://dev.socrata.com/docs/paging). This method allows us to fetch the data in manageable batches, specified by the `$limit` parameter, while navigating through the dataset using the `$offset` parameter. The process is illustrated in the following diagram:
 
@@ -244,7 +244,7 @@ In this tutorial, we will adopt the writing style of [*The Rust Programming Lang
 
 ### Writing our first Mage blocks
 
-Here we will implement our first block, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to our already created pipeline, `socrata_iowa_liquor_pipeline`. But if you want to follow this tutorial from scratch, you can also create a new pipeline, for example, `socrata_iowa_liquor_pipeline_from_scratch`, and continue working from there. With the intuitive Mage UI, it will be easy for you to create this new pipeline.
+Here we will implement our first blocks, two of them will fetch metadata from the SODA API, and another one will get metadata from our local database (DuckDB). First lets go to our already created pipeline, `socrata_iowa_liquor_pipeline`. But if you want to follow this tutorial from scratch, you can also create a new pipeline, for example, `socrata_iowa_liquor_pipeline_from_scratch`, and continue working from there. With the intuitive Mage UI, it will be easy for you to create this new pipeline.
 
 Our first block:
 
@@ -1484,7 +1484,7 @@ No citation is required, but if you found this project helpful, I'd greatly appr
 
 ## Acknowledgements
 
-To Little Mai...
+To Little Mai, my home office manger and editor in chief of "Paws-On Data"
 
 ![Little Mai](img/Little_Mai_data_eng.png)
 
