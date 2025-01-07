@@ -758,7 +758,7 @@ def transform(data, *args, **kwargs):
 
 In this context, `data` represents the upstream `DataFrame` passed to this block by `pull_data_from_socrata`. It is the first parameter of the `transform` transformer. The Polars transformation begins with the `with_columns` method, which is used to add or replace columns in the `DataFrame`.
 
-Within `with_columns`, we define the transformations. To create the first new variable, we use the `pl.when()` function to start a conditional statement. To reference a column, we use the `pl.col()` function. If you are familiar with Pandas or `dplyr`, this might feel counterintuitive at first, but it works in a similar fashion—just pass the column name as a string, e.g., `pl.col("your_col")`.
+Within `with_columns`, we define the transformations. To create the first new variable, we use the `pl.when()` function to start a conditional statement. To reference a column, we use the `pl.col()` function. If you are only familiar with Pandas or `dplyr`, this might feel counterintuitive at first, but it works in a similar fashion—just pass the column name as a string, e.g., `pl.col("your_col")`.
 
 Once the column is selected, we apply the `.str.contains()` method to check if the string in a cell contains a specified pattern. If the pattern matches, the value specified in `.then()` will be used. We can chain additional `.when()` statements for more conditions, and the default value, used when no condition is met, is specified with `.otherwise("Other")`. To name the new column, we use `.alias("liquor_type")`. If the name matches an existing column, it will overwrite that column.
 
@@ -798,7 +798,7 @@ def test_bottle_size_col(output, *args) -> None:
     assert output.get_column("bottle_size").dtype is pl.Utf8, "The new variable type doesn't match" # <4>
 
 ```
-1. Validate the overall output for correctness.
+1. Validate the overall output has content.
 2. Verify the `liquor_type` column's content and data type.
 3. Check the `is_premium` column's content and data type.
 4. Ensure the `bottle_size` column's content and data type are correct.
@@ -948,7 +948,7 @@ def db_exist(*args) -> None:
 ```
 
 
-Now we move to the real exporter, and the last block of our flow. And as you already guessed, here is where we store the retrieved data to our local database. First we establish a connection with our database, and use the object `conn` to interact with it, then we try to insert the freshly fetched and transformed data to the table `iowa_liquor_sales`. If a constraint exception is raised we check for duplicates in out batch, exclude them, and try to insert them again. This exception handling will be specially useful when we are at the stage of just updating with the last records our data base. You can examine this in the block:
+Now we move to the real exporter, and the last block of our flow. And as you already guessed, here is where we store the retrieved data to our local database. First we establish a connection with our database, and use the object `conn` to interact with it, then we try to insert the freshly fetched and transformed data to the table `iowa_liquor_sales`. If a constraint exception is raised we check for duplicates in our batch, exclude them, and try to insert them again. This exception handling will be specially useful when we are at the stage of just updating with the last records our data base. You can examine this in the block:
 
 Filename: [`data_exporters/export_polars_to_duckdb.py`](https://github.com/jospablo777/mage_duckdb_pipeline/blob/main/data_exporters/export_polars_to_duckdb.py)
 ```{python}
@@ -984,7 +984,7 @@ def insert_data_in_table(data, *args, **kwargs):
 ```
 1. Connect to the local database.
 2. Attempt to insert the data into the `iowa_liquor_sales` table.
-3. If a constraint exception occurs, it likely means the batch of data pulled contains records already present in the database.
+3. If a constraint exception occurs, it likely means the batch of data pulled contains records already present in the database. It should not be about null values since we have already validated that upstream.
 4. In case of an exception, query the invoice IDs from the local database and filter out the duplicate records from the incoming batch.
 5. If the filtered `DataFrame` still contains records, proceed with inserting them into the table.
 6. Close the database connection to ensure safety and prevent potential issues.
@@ -1037,11 +1037,11 @@ You can continue with this until your local data is up to date. Remember that we
 
 ### Should I manually run the pipeline whenever I need to update the data?
 
-Running the pipeline in your terminal might be an option, but not the most appealing one, depending on your use case. For instance, the Iowa Liquor data set is updated once per month with the new data available on the 1st of each month, according to the [documentation.](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) Hence, it makes sense to run an update job once per month. We can configure a trigger for this, and it is very easy to do, so go review Mage's [documentation](https://docs.mage.ai/orchestration/triggers/configure-triggers-in-code) if you are in the need.
+Running the pipeline in your terminal might be an option, but not the most appealing one, depending on your use case. For instance, the Iowa Liquor data set is updated once per month with the new data available on the 1st of each month, according to its [documentation.](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) Hence, it makes sense to run an update job once per month. We can configure a trigger for this, and it is very easy to do, so go review Mage's [documentation](https://docs.mage.ai/orchestration/triggers/configure-triggers-in-code) if you are in the need.
 
 ![Progress we've made so far.](img/serving_done_data_lifecycle_logos.png)
 
-And our data is ready to be served via SQL! We can continue with the pipeline's end goal: analytics and modeling.
+And our data is ready to be served via SQL! We can continue with the pipeline's end goal: analytics and predictive modeling.
 
 
 ## Data analytics
@@ -1074,7 +1074,7 @@ FROM iowa_liquor_sales
 GROUP BY date, liquor_type
 ```
 
-The output table of this query is stored in `bottles_sold_per_type`. Let's have a peek at it:
+The output table of this query is stored in the object `bottles_sold_per_type`. Let's have a peek at it:
 
 ```{r}
 #| label: first_query_head
@@ -1088,6 +1088,7 @@ Let's say we want to know how well we sell liquor and see if there is a trend in
 
 ```{r}
 #| label: aggregation_by_month
+#| output: false
 
 bottle_sales_by_month <- bottles_sold_per_type %>% 
   group_by(month = floor_date(date, 'month'), # Group by month
@@ -1159,6 +1160,7 @@ bottles_sold_per_type %>%
 It contains the:
 
 - Store code (ID)
+- Store address
 - Store name
 - Geolocation
 
@@ -1211,7 +1213,7 @@ leaflet(data = bottles_sold_per_type_0) %>%
 ```
 
 
-Great! Now, we have a map of the stores that recently ordered mezcal. We can look for the closest one and go there for our treat. You can also click the dot of your store of interest to get its name and address.
+Great! Now, we have an interactive map of the stores that recently ordered mezcal. We can look for the closest one and go there for our treat. You can also click the dot of your store of interest to get its name and address.
 
 ![Progress we've made so far.](img/analytics_done_data_lifecycle_logos.png)
 
@@ -1272,7 +1274,7 @@ data_df.head(5)
 
 ```
 
-We can write the query as a docstring and then pass it to the `.sql()` command. Also, notice that we get our query results as a Pandas data frame with the `.df()` at the end.
+We write the query as a docstring and then pass it to the `.sql()` command. Also, notice that we get our query results as a Pandas data frame with the `.df()` at the end.
 
 Since we are working with time series data, we will need to reshape our data.
 
@@ -1289,28 +1291,27 @@ pivoted_data = pivoted_data.fillna(0)
 pivoted_data.head(5)
 ```
 
-Here, we pivoted in a wider shape our base data frame and created a new time series column for each liquor type, leaving in place the columns `year_month` and `month`. We also fill the missing values with zeroes. For example, remember that we started recording official mezcal sales in 2016, meaning that the `NaN` at the beginning of the `Mezcal` column will be filled with zeroes.
+Here, we pivoted in a wider shape our base data frame and created a new time series column for each liquor type, leaving in place the columns `year_month` and `month`. We also fill the missing values with zeroes. For example, remember that we started recording official mezcal sales in 2016, meaning that the `NaN` at the beginning of the `Mezcal` column will be filled with zeroes. This is because we will use the sales of each type of liquor as predictors of rum sales.
 
 Next, we will organize our data according to the time series structure. Remember that **the order of our observations matters** in this kind of data. Also we will split our data in two sets, one for training, another for testing.
 
 ```{python}
 #| label: organize_and_split_data_time_series
 
-# Filter the data to include only rows for training and testing
 pivoted_data['year_month'] = pd.to_datetime(pivoted_data['year_month']) # <1>
 pivoted_data = pivoted_data.sort_values(by='year_month')                # <1>
 
 # Define target (Rum) and features (all other columns except year_month and Rum)
-target = 'Rum' # <2>
+target   = 'Rum' # <2>
 features = [col for col in pivoted_data.columns if col not in ['year_month', 'Rum']] # <2>
 
-# Split into train and test
+# Separate target and features
 y = pivoted_data[target]    # <3>
 X = pivoted_data[features]  # <3>
 
 # Define test period (last two quarters of 2019)
 train_cutoff = pivoted_data['year_month'] < '2019-07-01' # <4>
-test_cutoff = ~train_cutoff                              # <4>
+test_cutoff  = ~train_cutoff                              # <4>
 
 X_train, X_test = X[train_cutoff], X[test_cutoff] # <5>
 y_train, y_test = y[train_cutoff], y[test_cutoff] # <5>
@@ -1321,7 +1322,7 @@ y_train, y_test = y[train_cutoff], y[test_cutoff] # <5>
 4. Define a test period, which in this case will be the last two quarters of 2019. The `train_cutoff` and `test_cutoff` objects are boolean Pandas series used to filter the data.
 5. Split the data into training and testing datasets.
 
-With our disjoint sets ready, we can continue encoding our categorical `month` variable using the one-hot encoding method.
+With our disjoint sets ready, we can continue with the next step, encoding our categorical `month` variable using the one-hot encoding method.
 
 ```{python}
 #| label: one_hot_encoding_month
@@ -1342,7 +1343,7 @@ X_test  = X_test.drop(columns=['month']).join(X_test_encoded)   # <3>
 2. Replace the original `month` column with the one-hot encoded columns.
 3. Remove the original `month` column and integrate the encoded columns into the dataset.
 
-With the months now encoded in our feature sets (`X`), we are ready to train the model. Since this is a forecasting problem, additional steps are required to adapt our regression model. We will use the [`make_reduction`](https://www.sktime.net/en/latest/api_reference/auto_generated/sktime.forecasting.compose.make_reduction.html) function from [`sktime`](https://www.sktime.net/en/stable/), a machine learning framework for time series, to transform a simple estimator—`RandomForestRegressor` in this case—into a forecaster capable of handling time series data.
+With the months now encoded in our feature sets (`X_`), we are ready to train the model. Since this is a forecasting problem, additional steps are required to adapt our regression model. We will use the [`make_reduction`](https://www.sktime.net/en/latest/api_reference/auto_generated/sktime.forecasting.compose.make_reduction.html) function from [`sktime`](https://www.sktime.net/en/stable/), a machine learning framework for time series, to transform a simple estimator—`RandomForestRegressor` in this case—into a forecaster capable of handling time series data.
 
 ```{python}
 #| label: forecaster_train
