@@ -1163,7 +1163,7 @@ It contains the:
 
 All the information we need to get our bottle. But a table with more than 300 stores is not easy to digest. So let's put that into a map; locating the stores closest to us would be easy.
 
-We will begin by converting our retrieved information into a [simple features](https://r-spatial.github.io/sf/articles/sf1.html) object (`sf`). The `sf` library greatly simplifies geospatial analysis, especially when working with geometry data types. First, we transform the `store_location` column (which is string type) into a `POINT` geometry type using the `st_as_sfc` function. Specifying the coordinate reference system (`crs = 4326`) is crucial here.
+We will begin by converting our retrieved information into a [simple features](https://r-spatial.github.io/sf/articles/sf1.html) object (`sf`). The `sf` library greatly simplifies geospatial analysis, especially when working with geometry data types. First, we transform the `store_location` column (which is string type) into a `POINT` geometry type using the `st_as_sfc` function. Specifying the coordinate reference system (`crs = 4326`) is crucial here. I recommend revisiting Lovelace, Nowosad, and Muenchow (2025) to learn more about simple features and geospatial analysis. I learned a lot in the 1st edition, and this second one is even better!
 
 Although our dataset documentation does not explicitly mention the coordinate reference system, WGS84 CRS (EPSG:4326) is the most logical choice. This is because WGS84 is the standard and most widely used system for representing latitude-longitude coordinates, making it the most likely CRS for our data[^15].
 
@@ -1482,6 +1482,8 @@ It's the *Bonjour* Bear, you can read more about the bear in [Know Your Meme](ht
 ## Cited works and recommended readings
 
 - Kersten, T., Leis, V., Kemper, A., Neumann, T., Pavlo, A., & Boncz, P. (2018). Everything you always wanted to know about compiled and vectorized queries but were afraid to ask. *Proceedings of the VLDB Endowment*, 11(13), 2209-2222. [https://doi.org/10.14778/3275366.3275370](https://doi.org/10.14778/3275366.3275370).
+
+- Lovelace, R., Nowosad, J., & Muenchow, J. (2025). *Geocomputation with R* (2nd ed.). Chapman and Hall/CRC. [https://r.geocompx.org/](https://r.geocompx.org/).
 
 - Reis, J., & Housley, M. (2022). *Fundamentals of data engineering: Plan and build robust data systems*. O'Reilly Media.
 
