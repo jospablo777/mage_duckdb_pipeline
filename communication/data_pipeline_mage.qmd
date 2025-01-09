@@ -820,7 +820,7 @@ DuckDB is well-known for its in-memory data manipulation capabilities, but it al
 - [**Lightweight compression:**](https://duckdb.org/2022/10/28/lightweight-compression.html) it employs advanced compression techniques to reduce storage space while maintaining efficiency.
 - [**Columnar vectorized query execution:**](https://vldb.org/pvldb/vol11/p2209-kersten.pdf) DuckDB processes data in chunks (vectors) rather than row-by-row, making efficient use of CPU and memory. This design is optimized for modern hardware architectures. For a comprehensive explanation, see Kersten et al. (2018).
 - [**Compact file structure:**](https://duckdb.org/docs/archive/1.0/internals/storage.html) DuckDB stores data in a compact, self-contained binary file, making it portable and easy to manage.
-- [**Comprehensible resources:**](https://www.manning.com/books/duckdb-in-action) besides excellent documentation, DuckDB has a fantastic community that makes it easy to use this database system. You can get a free "DuckDB in Action" copy on the [MotherDuck](https://motherduck.com/duckdb-book-brief/) webpage[^11].
+- [**Comprehensible resources:**](https://www.manning.com/books/duckdb-in-action) besides excellent documentation, DuckDB has a fantastic community that makes it easy to use this database system. You can get a free copy of "DuckDB in Action" by Needham et al. (2024) on the [MotherDuck](https://motherduck.com/duckdb-book-brief/) webpage[^11].
 
 Due to this and its ease of use[^12], DuckDB is an ideal tool for our purpose. So let's continue with the implementation of our storage step.
 
@@ -1484,6 +1484,8 @@ It's the *Bonjour* Bear, you can read more about the bear in [Know Your Meme](ht
 - Kersten, T., Leis, V., Kemper, A., Neumann, T., Pavlo, A., & Boncz, P. (2018). Everything you always wanted to know about compiled and vectorized queries but were afraid to ask. *Proceedings of the VLDB Endowment*, 11(13), 2209-2222. [https://doi.org/10.14778/3275366.3275370](https://doi.org/10.14778/3275366.3275370).
 
 - Lovelace, R., Nowosad, J., & Muenchow, J. (2025). *Geocomputation with R* (2nd ed.). Chapman and Hall/CRC. [https://r.geocompx.org/](https://r.geocompx.org/).
+
+- Needham, M., Hunger, M., & Simons, M. (2024). *DuckDB in Action*. Manning Publications.
 
 - Reis, J., & Housley, M. (2022). *Fundamentals of data engineering: Plan and build robust data systems*. O'Reilly Media.
 
