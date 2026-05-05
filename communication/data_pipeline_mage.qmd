@@ -1338,13 +1338,13 @@ rum_sales['year_month'] = pd.to_datetime(rum_sales['year_month'])
 rum_sales = (
     rum_sales
     .set_index('year_month')
-    .sort_index()
-    .asfreq('MS')
+    .sort_index() # <1>
+    .asfreq('MS') # <2>
     .fillna({'bottles_sold': 0})
     .reset_index()
 )
 
-forecast_start = pd.Timestamp('2025-01-01')
+forecast_start = pd.Timestamp('2025-01-01') # <3>
 
 y = (
     rum_sales
@@ -1354,8 +1354,8 @@ y = (
     .fillna(0)
 )
 
-y_train = y[y.index < forecast_start]
-y_test = y[y.index >= forecast_start]
+y_train = y[y.index < forecast_start] # <4>
+y_test = y[y.index >= forecast_start] # <4>
 
 if y_test.empty:
     raise ValueError(
@@ -1368,7 +1368,6 @@ test_df = y_test.rename('bottles_sold').reset_index()
 
 train_df.tail(3), test_df.head(3)
 ```
-
 1. Ensure the data is in chronological order.
 2. Aggregate the data to a regular monthly frequency.
 3. Define the forecast period, which in this case starts in January 2025 and continues through the 2026 months available in the database.
