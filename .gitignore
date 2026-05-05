@@ -237,3 +237,4 @@ DO_NOT_COMMIT
 # DuckDB databases
 *.duckdb
 *.duckdb.wal
+.positai
