@@ -152,10 +152,13 @@ requires-python = ">=3.12, <3.13"
 dependencies = [
     "duckdb>=1.5.2",
     "mage-ai==0.9.75",
+    "pandas==2.2.3",
+    "scikit-learn>=1.5,<2",
+    "skforecast==0.22.0",
 ]
 ```
 
-Notice two things. First, we restrict Python to the 3.12 series because this project was tested in that runtime. Second, `mage-ai` is pinned to `0.9.75`, while DuckDB allows compatible newer versions starting from `1.5.2`. The exact versions installed in your environment are recorded in `uv.lock`, so collaborators and future runs can recreate the same working setup.
+Notice three things. First, we restrict Python to the 3.12 series because this project was tested in that runtime. Second, `mage-ai` is pinned to `0.9.75`, while DuckDB allows compatible newer versions starting from `1.5.2`. Third, the forecasting section below uses `skforecast` with a scikit-learn estimator, so those modeling dependencies are also captured in the project definition. The exact versions installed in your environment are recorded in `uv.lock`, so collaborators and future runs can recreate the same working setup.
 
 If you do not have `uv` installed yet, install it first:
 
@@ -187,7 +190,7 @@ When adding or changing dependencies, use `uv add` so that `pyproject.toml` and 
 #| include: true
 #| eval: false
 
-uv add "mage-ai==0.9.75" "duckdb>=1.5.2"
+uv add "mage-ai==0.9.75" "duckdb>=1.5.2" "pandas==2.2.3" "scikit-learn>=1.5,<2" "skforecast==0.22.0"
 uv sync
 ```
 
@@ -1273,25 +1276,23 @@ Now that we better understand our data, we can use our DuckDB to feed some algor
 
 ## Predictive modeling (machine learning)
 
-We have a lightning-fast local database for advanced analytics, and we can use the same resource for statistical and predictive modeling. Let's say [some gangster is dissin ya' fly girl]{style="text-decoration: line-through;"} we're in the middle of 2019, and the supply chain team is interested in rum supply for the end of the year due to the upcoming holidays. 
+We have a lightning-fast local database for advanced analytics, and we can use the same resource for statistical and predictive modeling. Let's say [some gangster is dissin ya' fly girl]{style="text-decoration: line-through;"} we're at the start of 2025, and the supply chain team is interested in rum supply for the upcoming 2025 and 2026 period due to the holidays. 
 
 ![](img/411_simpsons.gif){fig-align="center"}
 
 You don't know the details well, but you suspect it has something to do with a conversation you overheard about Martha Stewart's [jet fuel recipe](https://www.youtube.com/watch?v=IPrnBb1BEHw) getting too popular. Anyways, you're excited since you were looking forward to doing some forecasting work by now.
 
-You start by setting up your Python environment for this job. R is undoubtedly nice for advanced analytics, but you do your machine learning with Python[^16].
+You start by setting up your Python environment for this job. R is undoubtedly nice for advanced analytics, but you do your machine learning with Python[^16]. In this example, we will use `skforecast`, a library that adapts scikit-learn compatible estimators to time series forecasting tasks. The idea is to transform the time series into a supervised learning problem using lagged values as predictors, then use a standard regression model to generate recursive multi-step forecasts.
 
 ```{python}
 #| label: python_setup
 
 import duckdb
+import numpy as np
 import pandas as pd
-from sktime.forecasting.compose import make_reduction
-from sktime.forecasting.conformal import ConformalIntervals  
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-from sklearn.preprocessing import OneHotEncoder
-import matplotlib.pyplot as plt
+
+from skforecast.recursive import ForecasterRecursive
+from sklearn.ensemble import HistGradientBoostingRegressor
 
 ```
 
@@ -1303,211 +1304,351 @@ With your prelude ready, we continue by establishing a connection with our local
 conn_py = duckdb.connect("../data/iowa_liquor.duckdb", read_only=True)
 ```
 
-After we have created a connection in Python, we can query the data we need for the model.
+After we have created a connection in Python, we can query the data we need for the model. A subtle but important detail: if we are forecasting from the start of 2025, we should not use sales from 2025 or 2026 as input features. That information would not exist yet when the forecast is made. For this reason, we will make a small but valid forecasting example using only the historical rum series, lagged sales values created by `skforecast`, and calendar features that are known in advance, such as the month of the year.
 
 ```{python}
 #| label: query_data_for_prediction
 
-query_liquors_sales = """
+query_rum_sales = """
   SELECT 
-      DATE_TRUNC('month', date) AS year_month,
-      MONTHNAME(year_month) AS month,
-      liquor_type,
+      CAST(DATE_TRUNC('month', date) AS DATE) AS year_month,
       SUM(sale_bottles) AS bottles_sold
   FROM iowa_liquor_sales
-  WHERE YEAR(date) < 2020
-  GROUP BY year_month, liquor_type
+  WHERE date < DATE '2027-01-01'
+    AND liquor_type = 'Rum'
+  GROUP BY year_month
   ORDER BY year_month;
 """
 
-data_df = conn_py.sql(query_liquors_sales).df()
+rum_sales = conn_py.sql(query_rum_sales).df()
 
-data_df.head(5)
+rum_sales.head(5)
 
 ```
 
 We write the query as a docstring and then pass it to the `.sql()` command. Also, notice that we get our query results as a Pandas data frame with the `.df()` at the end.
 
-Since we are working with time series data, we will need to reshape our data.
-
-```{python}
-#| label: reshape_data
-
-pivoted_data = data_df.pivot(index   = ['year_month', 'month'], 
-                             columns = 'liquor_type', 
-                             values  = 'bottles_sold').reset_index()
-
-# Fill missing values
-pivoted_data = pivoted_data.fillna(0)
-
-pivoted_data.head(5)
-```
-
-Here, we pivoted in a wider shape our base data frame and created a new time series column for each liquor type, leaving in place the columns `year_month` and `month`. We also fill the missing values with zeroes. For example, remember that we started recording official mezcal sales in 2016, meaning that the `NaN` at the beginning of the `Mezcal` column will be filled with zeroes. This is because we will use the sales of each type of liquor as predictors of rum sales.
-
-Next, we will organize our data according to the time series structure. Remember that **the order of our observations matters** in this kind of data. Also we will split our data in two sets, one for training, another for testing.
+Since we are working with time series data, we will need to organize our data by month and split it chronologically. Remember that **the order of our observations matters** in this kind of data. Also we will split our data in two sets, one for training, another for testing.
 
 ```{python}
 #| label: organize_and_split_data_time_series
 
-pivoted_data['year_month'] = pd.to_datetime(pivoted_data['year_month']) # <1>
-pivoted_data = pivoted_data.sort_values(by='year_month')                # <1>
+rum_sales['year_month'] = pd.to_datetime(rum_sales['year_month'])
 
-# Define target (Rum) and features (all other columns except year_month and Rum)
-target   = 'Rum' # <2>
-features = [col for col in pivoted_data.columns if col not in ['year_month', 'Rum']] # <2>
+rum_sales = (
+    rum_sales
+    .set_index('year_month')
+    .sort_index()
+    .asfreq('MS')
+    .fillna({'bottles_sold': 0})
+    .reset_index()
+)
 
-# Separate target and features
-y = pivoted_data[target]    # <3>
-X = pivoted_data[features]  # <3>
+forecast_start = pd.Timestamp('2025-01-01')
 
-# Define test period (last two quarters of 2019)
-train_cutoff = pivoted_data['year_month'] < '2019-07-01' # <4>
-test_cutoff  = ~train_cutoff                              # <4>
+y = (
+    rum_sales
+    .set_index('year_month')['bottles_sold']
+    .astype(float)
+    .asfreq('MS')
+    .fillna(0)
+)
 
-X_train, X_test = X[train_cutoff], X[test_cutoff] # <5>
-y_train, y_test = y[train_cutoff], y[test_cutoff] # <5>
+y_train = y[y.index < forecast_start]
+y_test = y[y.index >= forecast_start]
+
+if y_test.empty:
+    raise ValueError(
+        "No observations were found from 2025 onward. "
+        "Run the pipeline with data that includes the 2025 and 2026 period."
+    )
+
+train_df = y_train.rename('bottles_sold').reset_index()
+test_df = y_test.rename('bottles_sold').reset_index()
+
+train_df.tail(3), test_df.head(3)
 ```
-1. Ensure the data is in chronological order.
-2. Identify the target variable and the features.
-3. Separate the target variable from the features.
-4. Define a test period, which in this case will be the last two quarters of 2019. The `train_cutoff` and `test_cutoff` objects are boolean Pandas series used to filter the data.
-5. Split the data into training and testing datasets.
 
-With our disjoint sets ready, we can continue with the next step, encoding our categorical `month` variable using the one-hot encoding method.
+1. Ensure the data is in chronological order.
+2. Aggregate the data to a regular monthly frequency.
+3. Define the forecast period, which in this case starts in January 2025 and continues through the 2026 months available in the database.
+4. Split the data into training and testing datasets.
+
+With our disjoint sets ready, we can continue with the next step: creating calendar variables that are available at prediction time. `skforecast` will create the lag features internally, but we can still pass known future information as exogenous variables. Here, we add a trend and two cyclical month features. These are safe because, at the start of 2025, we already know which months belong to 2025 and 2026.
 
 ```{python}
-#| label: one_hot_encoding_month
+#| label: calendar_features
 
-encoder = OneHotEncoder(sparse_output=False, drop='first')       # <1>
-encoded_months_train = encoder.fit_transform(X_train[['month']]) # <1>
-encoded_months_test  = encoder.transform(X_test[['month']])      # <1>
+def calendar_exog(dates, origin):
+    """Create calendar features known before the forecast period begins."""
+    dates = pd.DatetimeIndex(pd.to_datetime(dates))
 
-month_columns   = encoder.get_feature_names_out(['month']) # <2>
-X_train_encoded = pd.DataFrame(encoded_months_train, columns=month_columns, index=X_train.index) # <2>
-X_test_encoded  = pd.DataFrame(encoded_months_test, columns=month_columns, index=X_test.index)   # <2>
+    months_from_origin = (
+        (dates.year - origin.year) * 12 +
+        (dates.month - origin.month)
+    ).astype(float)
 
-# Drop the original 'month' column and add the encoded columns
-X_train = X_train.drop(columns=['month']).join(X_train_encoded) # <3>
-X_test  = X_test.drop(columns=['month']).join(X_test_encoded)   # <3>
+    return pd.DataFrame(
+        {
+            'trend': months_from_origin,
+            'month_sin': np.sin(2 * np.pi * dates.month / 12),
+            'month_cos': np.cos(2 * np.pi * dates.month / 12),
+        },
+        index=dates,
+    )
+
+origin = y.index.min()
+exog = calendar_exog(y.index, origin=origin)
+
+exog_train = exog.loc[y_train.index]
+exog_test = exog.loc[y_test.index]
+
+exog_train.tail(3)
 ```
-1. Apply one-hot encoding to the `month` variable.
-2. Replace the original `month` column with the one-hot encoded columns.
-3. Remove the original `month` column and integrate the encoded columns into the dataset.
 
-With the months now encoded in our feature sets (`X_`), we are ready to train the model. Since this is a forecasting problem, additional steps are required to adapt our regression model. We will use the [`make_reduction`](https://www.sktime.net/en/latest/api_reference/auto_generated/sktime.forecasting.compose.make_reduction.html) function from [`sktime`](https://www.sktime.net/en/stable/), a machine learning framework for time series, to transform a simple estimator—`RandomForestRegressor` in this case—into a forecaster capable of handling time series data.
+With the calendar features ready, we can train the model. We will model `log1p(bottles_sold)` instead of raw bottle counts. This keeps predictions positive after transforming the values back to the original scale and makes the residuals more stable.
 
 ```{python}
 #| label: forecaster_train
-#| warning: false
 
-# Define the forecaster
-forecaster = make_reduction(
-    RandomForestRegressor(random_state=42), # Scikit-learn regression model
-    strategy="recursive", 
-    window_length=6  # Use 6 months of past data
+y_train_log = np.log1p(y_train)
+
+forecaster = ForecasterRecursive(
+    estimator=HistGradientBoostingRegressor(
+        loss='squared_error',
+        learning_rate=0.05,
+        max_iter=500,
+        max_leaf_nodes=8,
+        l2_regularization=0.1,
+        random_state=123,
+    ),
+    lags=12,
 )
 
-# Wrap the forecaster with ConformalIntervals
-conformal_forecaster = ConformalIntervals(forecaster)
+forecaster.fit(
+    y=y_train_log,
+    exog=exog_train,
+    store_in_sample_residuals=True,
+)
 
-# Fit the conformal forecaster
-conformal_forecaster.fit(y_train, X=X_train)
+pd.DataFrame(
+    {
+        'component': [
+            'forecaster',
+            'estimator',
+            'lags',
+            'target scale',
+            'training period',
+        ],
+        'value': [
+            'ForecasterRecursive',
+            'HistGradientBoostingRegressor',
+            '1 to 12 months',
+            'log1p(bottles_sold)',
+            f"{y_train.index.min().date()} to {y_train.index.max().date()}",
+        ],
+    }
+)
 ```
 
-First, we instantiate the `forecaster`, which uses a `RandomForestRegressor` as its core model. Next, we wrap it in the ConformalIntervals class to create a conformal predictor. This allows us not only to make predictions but also to generate confidence intervals, adding an extra layer of uncertainty quantification to our forecasts. The hierarchical structure of the model can be inspected in the visualization displayed below the preceding code snippet.
+First, `skforecast` turns the monthly series into a supervised learning table using the previous 12 months as predictors. Then, the gradient boosting model learns how those lagged values and calendar variables relate to the next monthly value. This is a stronger machine learning example than the earlier simple regression because the model is now learning from the recent behavior of the series itself, not only from a trend and month indicators.
 
-Once the model is set up, we train it using the `fit` function. With the trained model ready, we can proceed to forecasting. Now, let's predict the rum sales:
+We also set `store_in_sample_residuals=True` when fitting the forecaster. This stores the training residuals that `skforecast` needs later to build the bootstrapped prediction interval around the point forecast.
+
+Once the model is set up, we train it using the historical data available before January 2025. With the trained model ready, we can proceed to forecasting. Now, let's predict the rum sales:
 
 ```{python}
 #| label: prediction_and_interval
 
-# Define the forecasting horizon
-fh = list(range(1, len(y_test) + 1))  # Forecast horizon matches test data length
+forecast_log = forecaster.predict_interval(
+    steps=len(y_test),
+    exog=exog_test,
+    method='bootstrapping',
+    interval=[5, 95],
+    n_boot=500,
+    use_in_sample_residuals=True,
+    use_binned_residuals=False,
+    random_state=123,
+    suppress_warnings=True,
+)
 
-# Point forecasts
-y_pred = conformal_forecaster.predict(fh=fh, X=X_test)
+# Keep the forecast index aligned with the observed holdout period.
+forecast_log.index = y_test.index
 
-# Predict confidence intervals
-pred_int = conformal_forecaster.predict_interval(fh=fh, X=X_test, coverage=0.9)
+forecast_results = pd.DataFrame(
+    {
+        'year_month': y_test.index,
+        'bottles_sold': y_test.to_numpy(),
+        'forecast': np.expm1(forecast_log['pred'].to_numpy()),
+        'lower': np.expm1(forecast_log['lower_bound'].to_numpy()),
+        'upper': np.expm1(forecast_log['upper_bound'].to_numpy()),
+    }
+)
+
+for column in ['forecast', 'lower', 'upper']:
+    forecast_results[column] = np.clip(forecast_results[column], a_min=0, a_max=None)
+
+forecast_results['lower'] = np.minimum(
+    forecast_results['lower'],
+    forecast_results['forecast'],
+)
+forecast_results['upper'] = np.maximum(
+    forecast_results['upper'],
+    forecast_results['forecast'],
+)
+
+forecast_results
 ```
 
-Forecasted rum sales for the last two quarters of 2019:
+Forecasted rum sales for the 2025 and 2026 months available in the database:
 
 ```{python}
 #| label: forecasted_rum_sales
-print(y_pred)
+
+forecast_results[['year_month', 'forecast', 'lower', 'upper']]
 ```
 
-Forecasted rum sales confidence interval (90% coverage) for the last two quarters of 2019:
-
-```{python}
-#| label: forecasted_interval_rum_sales
-print(pred_int)
-```
-
-Here is the predicted output for the last two 2019 quarters. Let's evaluate the model to see how well it performed against the observed ground truth.
+Here is the predicted output for the forecast period starting in 2025. Let's evaluate the model to see how well it performed against the observed ground truth.
 
 ```{python}
 #| label: evaluate_model
 
-# Evaluate the forecast
-mae = mean_absolute_error(y_test, y_pred)
-mse = mean_squared_error(y_test, y_pred)
+errors = forecast_results['bottles_sold'] - forecast_results['forecast']
 
-print(f"Mean Absolute Error (MAE): {mae}")
-print(f"Mean Squared Error (MSE): {mse}")
+mae = np.mean(np.abs(errors))
+rmse = np.sqrt(np.mean(errors ** 2))
+
+pd.DataFrame(
+    {
+        'metric': ['MAE', 'RMSE'],
+        'value': [mae, rmse],
+    }
+)
 ```
 
-These numbers don't tell us much on their own, and it would be ideal to compare them against the MAE and MSE of another model. However, we won't invest more time in that. Feel free to train a different model to make the comparison!
+These numbers don't tell us much on their own, and it would be ideal to compare them against the MAE and RMSE of another model. However, we won't invest more time in that. Feel free to train a different model to make the comparison!
 
-Next, a key step in evaluating the model is visualizing how its forecasts compare with the observed ground truth. To achieve this, we create a plot of our forecast:
+Next, a key step in evaluating the model is visualizing how its forecasts compare with the observed ground truth. To achieve this, we create an interactive time series chart of our forecast. The chart separates the historical observations used for training from the holdout period, overlays the forecast, and adds a bootstrapped uncertainty band from `skforecast`:
 
 ```{python}
-#| label: plot_prediction
+#| label: prepare_forecast_plot_data
+#| include: false
 
-# Extract CI
-y_pred_lower = pred_int[('Rum', 0.9, 'lower')].values
-y_pred_upper = pred_int[('Rum', 0.9, 'upper')].values
-
-# Combine actual and predicted data
-results_2019 = pivoted_data[pivoted_data['year_month'].dt.year == 2019][['year_month', 'Rum']].copy()
-results_2019['Forecast'] = None
-results_2019['Lower'] = None
-results_2019['Upper'] = None
-
-# Assign forecast values and prediction intervals for the test period
-test_period = results_2019['year_month'] >= '2019-07-01'
-results_2019.loc[test_period, 'Forecast'] = y_pred.values
-results_2019.loc[test_period, 'Lower'] = y_pred_lower
-results_2019.loc[test_period, 'Upper'] = y_pred_upper
-
-# Create figure
-plt.figure(figsize=(10, 6))
-
-# Plot actual Rum sales
-plt.plot(results_2019['year_month'], results_2019['Rum'], label='Actual rum sales', marker='o')
-
-# Plot forecasted Rum sales
-plt.plot(results_2019['year_month'], results_2019['Forecast'], label='Forecasted rum sales', linestyle='--', marker='x', color='#b1d25a')
-
-# Plot prediction intervals as separate lines
-plt.plot(results_2019.loc[test_period, 'year_month'], results_2019.loc[test_period, 'Lower'], label='Lower bound', linestyle=':', color='#b1d25a')
-plt.plot(results_2019.loc[test_period, 'year_month'], results_2019.loc[test_period, 'Upper'], label='Upper bound', linestyle=':', color='#b1d25a')
-
-# Highlight the test period
-plt.axvline(x=pd.to_datetime('2019-07-01'), color='#ed7c65', linestyle='--', label='Start of forecast period')
-
-plt.title('Forecast of rum bottles sold for 2019 Q3 and Q4')
-plt.xlabel('Month')
-plt.ylabel('Bottles sold')
-plt.xticks(rotation=45)
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
+plot_history = rum_sales[rum_sales['year_month'] >= '2022-01-01'].copy()
+plot_train = plot_history[plot_history['year_month'] < forecast_start].copy()
+plot_holdout = plot_history[plot_history['year_month'] >= forecast_start].copy()
+plot_forecast = forecast_results.copy()
+forecast_start_plot = forecast_start.strftime('%Y-%m-%d')
 ```
-We see that the ground truth falls within our confidence interval; we can also compare our prediction with the ground truth (consider that the ground truth won't be present in real life since that period hasn't happened). So you can now go with your stakeholders and present this chart so they can organize their rum orders for that year's holiday season. 
+
+```{r}
+#| label: plot_prediction
+#| message: false
+#| warning: false
+
+plot_train <- reticulate::py_to_r(reticulate::py$plot_train) |>
+  mutate(year_month = as.Date(year_month))
+
+plot_holdout <- reticulate::py_to_r(reticulate::py$plot_holdout) |>
+  mutate(year_month = as.Date(year_month))
+
+plot_forecast <- reticulate::py_to_r(reticulate::py$plot_forecast) |>
+  mutate(year_month = as.Date(year_month))
+
+forecast_start_plot <- as.Date(reticulate::py_to_r(reticulate::py$forecast_start_plot))
+
+plotly::plot_ly() |>
+  plotly::add_ribbons(
+    data = plot_forecast,
+    x = ~year_month,
+    ymin = ~lower,
+    ymax = ~upper,
+    name = "90% bootstrapped interval",
+    fillcolor = "rgba(31, 119, 180, 0.16)",
+    line = list(color = "rgba(31, 119, 180, 0)"),
+    hoverinfo = "skip"
+  ) |>
+  plotly::add_trace(
+    data = plot_train,
+    x = ~year_month,
+    y = ~bottles_sold,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Observed history",
+    line = list(color = "#37474F", width = 2),
+    marker = list(size = 6),
+    hovertemplate = "%{x|%b %Y}<br>Observed: %{y:,.0f} bottles<extra></extra>"
+  ) |>
+  plotly::add_trace(
+    data = plot_holdout,
+    x = ~year_month,
+    y = ~bottles_sold,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Observed holdout",
+    line = list(color = "#00897B", width = 2),
+    marker = list(size = 7),
+    hovertemplate = "%{x|%b %Y}<br>Observed: %{y:,.0f} bottles<extra></extra>"
+  ) |>
+  plotly::add_trace(
+    data = plot_forecast,
+    x = ~year_month,
+    y = ~forecast,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Forecasted rum sales",
+    line = list(color = "#D81B60", width = 3, dash = "dash"),
+    marker = list(size = 7),
+    hovertemplate = "%{x|%b %Y}<br>Forecast: %{y:,.0f} bottles<extra></extra>"
+  ) |>
+  plotly::layout(
+    title = list(
+      text = "Forecast of monthly rum bottles sold, 2025 to 2026",
+      x = 0
+    ),
+    xaxis = list(
+      title = "Month",
+      rangeslider = list(visible = TRUE)
+    ),
+    yaxis = list(
+      title = "Bottles sold",
+      tickformat = ",.0f"
+    ),
+    hovermode = "x unified",
+    legend = list(
+      orientation = "h",
+      x = 0,
+      y = 1.08
+    ),
+    margin = list(l = 60, r = 30, t = 90, b = 40),
+    shapes = list(
+      list(
+        type = "line",
+        x0 = forecast_start_plot,
+        x1 = forecast_start_plot,
+        y0 = 0,
+        y1 = 1,
+        xref = "x",
+        yref = "paper",
+        line = list(color = "#757575", dash = "dash")
+      )
+    ),
+    annotations = list(
+      list(
+        x = forecast_start_plot,
+        y = 1,
+        xref = "x",
+        yref = "paper",
+        text = "Forecast starts",
+        showarrow = FALSE,
+        xanchor = "left",
+        yanchor = "bottom"
+      )
+    )
+  )
+```
+
+We can now compare the forecast with the ground truth for the 2025 and 2026 months that are already available in the database. Remember that, in real life, the ground truth would not be available when we make the forecast. The important modeling fix is that the forecast uses only information available before the forecast period begins, plus historical lag values and calendar information we already know. The uncertainty band comes from bootstrapped residuals, so it should be interpreted as a lightweight diagnostic interval rather than a formal business guarantee. So you can now go with your stakeholders and present this chart so they can organize their rum orders for the upcoming period. 
 
 That's fantastic! But can we go even further downstream in our data flow by diving into stakeholder management, effective result presentation, and model monitoring? 🤩
 
