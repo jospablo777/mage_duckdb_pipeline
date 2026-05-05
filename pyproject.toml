@@ -8,6 +8,8 @@ dependencies = [
     "duckdb>=1.5.2",
     "mage-ai==0.9.75",
     "matplotlib>=3.10.9",
+    "plotly>=6.7.0",
     "scikit-learn>=1.7.2",
+    "skforecast>=0.22.0",
     "sktime>=0.40.1",
 ]
