@@ -1545,18 +1545,18 @@ forecast_start_plot = forecast_start.strftime('%Y-%m-%d')
 #| message: false
 #| warning: false
 
-plot_train <- reticulate::py_to_r(reticulate::py$plot_train) |>
+plot_train <- reticulate::py_to_r(reticulate::py$plot_train) %>%
   mutate(year_month = as.Date(year_month))
 
-plot_holdout <- reticulate::py_to_r(reticulate::py$plot_holdout) |>
+plot_holdout <- reticulate::py_to_r(reticulate::py$plot_holdout) %>%
   mutate(year_month = as.Date(year_month))
 
-plot_forecast <- reticulate::py_to_r(reticulate::py$plot_forecast) |>
+plot_forecast <- reticulate::py_to_r(reticulate::py$plot_forecast) %>%
   mutate(year_month = as.Date(year_month))
 
 forecast_start_plot <- as.Date(reticulate::py_to_r(reticulate::py$forecast_start_plot))
 
-plotly::plot_ly() |>
+plotly::plot_ly() %>%
   plotly::add_ribbons(
     data = plot_forecast,
     x = ~year_month,
@@ -1566,7 +1566,7 @@ plotly::plot_ly() |>
     fillcolor = "rgba(31, 119, 180, 0.16)",
     line = list(color = "rgba(31, 119, 180, 0)"),
     hoverinfo = "skip"
-  ) |>
+  ) %>%
   plotly::add_trace(
     data = plot_train,
     x = ~year_month,
@@ -1577,7 +1577,7 @@ plotly::plot_ly() |>
     line = list(color = "#37474F", width = 2),
     marker = list(size = 6),
     hovertemplate = "%{x|%b %Y}<br>Observed: %{y:,.0f} bottles<extra></extra>"
-  ) |>
+  ) %>%
   plotly::add_trace(
     data = plot_holdout,
     x = ~year_month,
@@ -1588,7 +1588,7 @@ plotly::plot_ly() |>
     line = list(color = "#00897B", width = 2),
     marker = list(size = 7),
     hovertemplate = "%{x|%b %Y}<br>Observed: %{y:,.0f} bottles<extra></extra>"
-  ) |>
+  ) %>%
   plotly::add_trace(
     data = plot_forecast,
     x = ~year_month,
@@ -1599,7 +1599,7 @@ plotly::plot_ly() |>
     line = list(color = "#D81B60", width = 3, dash = "dash"),
     marker = list(size = 7),
     hovertemplate = "%{x|%b %Y}<br>Forecast: %{y:,.0f} bottles<extra></extra>"
-  ) |>
+  ) %>%
   plotly::layout(
     title = list(
       text = "Forecast of monthly rum bottles sold, 2025 to 2026",
