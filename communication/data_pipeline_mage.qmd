@@ -37,7 +37,7 @@ library(leaflet)
 
 # Tell Quarto/reticulate where uv creates the project Python environment.
 # uv sync creates this .venv directory in the project root.
-Sys.setenv(RETICULATE_PYTHON = ".venv/bin/python")
+Sys.setenv(RETICULATE_PYTHON = "../.venv/bin/python")
 ```
 
 
@@ -1189,6 +1189,7 @@ WITH ranked_stores AS (
       ROW_NUMBER() OVER (PARTITION BY store ORDER BY date DESC) AS row_num
     FROM iowa_liquor_sales
     WHERE YEAR(date) >= 2024
+          AND YEAR(date) <= 2025
           AND store_location IS NOT NULL
           AND liquor_type = 'Mezcal'
 )
