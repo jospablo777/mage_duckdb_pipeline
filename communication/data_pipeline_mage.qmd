@@ -421,9 +421,9 @@ And again, we can dissect this request:
 If we translate this query to SQL, we would have something like this:
 
 ```{sql}
-#| label: soda_records_per_year_to_sql
-#| include: true
-#| eval: false
+--| label: soda_records_per_year_to_sql
+--| include: true
+--| eval: false
 
 SELECT YEAR(date) AS year
        COUNT(invoice_line_no) AS rows
@@ -1059,9 +1059,9 @@ conn <- DBI::dbConnect(
 Notice that we indicate `read_only = TRUE` so this connection can be shared between processes. With our connection in place, let's query some data to visualize:
 
 ```{sql}
-#| label: query_agg_liquors
-#| connection: conn
-#| output.var: bottles_sold_per_type
+--| label: query_agg_liquors
+--| connection: conn
+--| output.var: bottles_sold_per_type
 
 SELECT 
   date,
@@ -1122,9 +1122,9 @@ The most popular liquors in Iowa seem to be whisky and vodka. The good news for 
 For this query, we will use a Common Table Expression (CTE) to retrieve the latest record for each store. We also filter the data to include only records from 2024 onward, where a geolocation is available, and the invoice corresponds to a mezcal purchase. Since the CTE ranks records by the most recent purchases, we can easily select the first record for each store in the main query.
 
 ```{sql}
-#| label: mezcal_stores_location
-#| connection: conn
-#| output.var: bottles_sold_per_type
+--| label: mezcal_stores_location
+--| connection: conn
+--| output.var: bottles_sold_per_type
 
 WITH ranked_stores AS (
     SELECT 
