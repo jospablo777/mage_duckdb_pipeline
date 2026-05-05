@@ -65,7 +65,7 @@ mage_duckdb_pipeline/
 ### Prerequisites
 
 - Python 3.12
-- `uv`
+- `uv` 0.11
 - macOS or Linux. The project was originally developed on Ubuntu, and it has also been tested from macOS during development.
 
 ### Install uv

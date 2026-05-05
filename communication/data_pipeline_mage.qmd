@@ -35,8 +35,9 @@ library(lubridate)
 library(sf)
 library(leaflet)
 
-# Tell quarto where is our python venv
-Sys.setenv(RETICULATE_PYTHON = "../venv/bin/python")
+# Tell Quarto/reticulate where uv creates the project Python environment.
+# uv sync creates this .venv directory in the project root.
+Sys.setenv(RETICULATE_PYTHON = ".venv/bin/python")
 ```
 
 
@@ -74,6 +75,7 @@ First, we will fetch the data from the Socrata Open Data API (SODA) through HTTP
 - [**Mage:**](https://www.mage.ai/) the data orchestrator that will automate and manage the pipeline.
 - [**Polars:**](https://pola.rs/) a high-performance data frame library implemented in Rust, ideal for fast data manipulation.
 - [**DuckDB:**](https://duckdb.org/) a columnar database system designed for efficient analytics and in-memory processing.
+- [**uv:**](https://docs.astral.sh/uv/) a fast Python package and project manager that creates the project environment, installs dependencies, and keeps the dependency lockfile reproducible.
 
 
 We've chosen the [Iowa Liquor Sales](https://data.iowa.gov/Sales-Distribution/Iowa-Liquor-Sales/m3tr-qhgy/about_data) dataset since it is big enough to make this ETL (extract, transform, load) pipeline interesting.
@@ -136,26 +138,78 @@ git clone https://github.com/jospablo777/mage_duckdb_pipeline.git
 cd mage_duckdb_pipeline
 ```
 
-Next, we'll set up a virtual environment and install the necessary libraries:
+This project uses [`uv`](https://docs.astral.sh/uv/) to manage the Python environment and dependencies. Instead of creating a virtual environment manually and installing packages with `pip`, we let `uv` read the project's `pyproject.toml` and `uv.lock` files, create the `.venv` directory, and install the pinned dependency set.
+
+The project intentionally uses a narrow Python and dependency range. At the time of writing, the relevant `pyproject.toml` section is:
+
+```toml
+[project]
+name = "mage-duckdb-pipeline"
+version = "0.1.0"
+description = "SODA to DuckDB: building a data pipeline for high-performance analytics with modern tools"
+readme = "README.md"
+requires-python = ">=3.12, <3.13"
+dependencies = [
+    "duckdb>=1.5.2",
+    "mage-ai==0.9.75",
+]
+```
+
+Notice two things. First, we restrict Python to the 3.12 series because this project was tested in that runtime. Second, `mage-ai` is pinned to `0.9.75`, while DuckDB allows compatible newer versions starting from `1.5.2`. The exact versions installed in your environment are recorded in `uv.lock`, so collaborators and future runs can recreate the same working setup.
+
+If you do not have `uv` installed yet, install it first:
 
 ```{bash}
-#| label: setup_venv
+#| label: install_uv
 #| include: true
 #| eval: false
 
-python -m venv venv             # The first 'venv' is the command, the second is the name of the folder for the virtual environment.
-source venv/bin/activate        # Activate the virtual environment.
-pip install -r requirements.txt # Install dependencies from the requirements file.
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv --version
 ```
 
-The `requirements.txt` file contains the libraries required for the project, with the key players being `mage-ai`, `polars`, and `duckdb`. Now, that we have all our dependencies ready we can start our Mage project with:
+Now sync the project environment:
+
+```{bash}
+#| label: setup_uv
+#| include: true
+#| eval: false
+
+uv sync
+```
+
+This command creates the project's `.venv` folder if needed and installs the dependencies resolved in `uv.lock`. In day-to-day use, this is the main command you need after cloning the repository.
+
+When adding or changing dependencies, use `uv add` so that `pyproject.toml` and `uv.lock` stay in sync. For example, the core dependencies can be expressed as:
+
+```{bash}
+#| label: manage_dependencies_with_uv
+#| include: true
+#| eval: false
+
+uv add "mage-ai==0.9.75" "duckdb>=1.5.2"
+uv sync
+```
+
+If you update a dependency later, update the lockfile deliberately. For example:
+
+```{bash}
+#| label: upgrade_dependency_with_uv
+#| include: true
+#| eval: false
+
+uv lock --upgrade-package duckdb
+uv sync
+```
+
+Now that the project environment is ready, we can start Mage through `uv run`:
 
 ```{bash}
 #| label: start_mage
 #| include: true
 #| eval: false
 
-mage start
+uv run mage start
 ```
 
 This will open a tab in our web browser that looks like this:
@@ -1005,17 +1059,17 @@ Now open a terminal in the project folder and run:
 #| include: true
 #| eval: false
 
-mage run . socrata_iowa_liquor_pipeline
+uv run mage run . socrata_iowa_liquor_pipeline
 ```
 
-We use the `run` command to execute the pipeline. The dot (`.`) refers to the current directory (assuming you're in the project's folder), and `socrata_iowa_liquor_pipeline` is the name of our pipeline. If everything runs successfully, your second batch should now be stored in your local database. A successful output will look like this:
+We use `uv run` to execute the Mage command inside the project's managed environment. The Mage `run` command executes the pipeline. The dot (`.`) refers to the current directory (assuming you're in the project's folder), and `socrata_iowa_liquor_pipeline` is the name of our pipeline. If everything runs successfully, your second batch should now be stored in your local database. A successful output will look like this:
 
 ```{bash}
 #| label: bash_pipeline_output
 #| include: true
 #| eval: false
 
-user@user-pc:~/mage_duckdb_pipeline$ mage run . socrata_iowa_liquor_pipeline
+user@user-pc:~/mage_duckdb_pipeline$ uv run mage run . socrata_iowa_liquor_pipeline
 Fetching the records-per-year metadata. This might take a couple minutes..
 Done! We have our year record metadata.
 
@@ -1518,7 +1572,7 @@ Have questions, suggestions, or just want to connect? Feel free to reach out!
 [^9]: For instance, I should move the `fetch_batch` function outside the `load_data_from_api` loader. Defining functions within other functions is generally considered a bad practice, as it can make the code harder to read, test, and maintain.
 [^10]: Repeat after me: "We love open source."
 [^11]: We've found Manning a reliable editorial for technical books. Most of the time, their materials have high-quality content that is easy to digest. Highly recommended 👌.
-[^12]: The only action we did to enable the use of DuckDB was `pip install duckdb`.
+[^12]: DuckDB is listed as an explicit dependency in `pyproject.toml` using `duckdb>=1.5.2`. In normal use, `uv sync` installs the resolved DuckDB version from `uv.lock`.
 [^13]: Please note that this is not a traditional exporter block; it could be a custom block. I chose the exporter type because it interacts with the local database and creates the table, even though no data is exported in an explicit manner.
 [^14]: Free Bird's guitar solo starts playing in the background 🎸🎶🎶.
 [^15]: If you've had the pleasure to work with geospatial analysis before, you probably already know that CRSs are always awfully documented (i.e., not documentation at all). So, working with coordinates of less standard regions is a painful process full of guesses.
